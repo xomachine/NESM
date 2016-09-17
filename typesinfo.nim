@@ -1,10 +1,9 @@
 
 from macros import error
 
-
 const basic_types = [
   "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
-    "bool", "char", "float32", "float64"
+    "bool", "char", "byte", "float32", "float64"
 ]
 
 type
@@ -12,10 +11,6 @@ type
     size*: int
     serialize*: proc(source: string, index: int): seq[NimNode]
     deserialize*: proc(source: string, index: int): seq[NimNode]
-
-    
-
-
 
 proc isBasic*(thetype: string): bool =
   thetype in basic_types

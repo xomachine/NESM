@@ -33,7 +33,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
       if plaintype in ["float", "int", "uint"]:
         error(("The type $1 is not allowed due to ambiguity. Consider using $1" %
               plaintype) & "32.")
-      error(("Type $1 is not a basic" % plaintype) & 
+      error(("Type $1 is not a basic " % plaintype) &
             "type nor a complex type under 'serializable' block!")
   of nnkBracketExpr:
     expectMinLen(thetype, 2)
