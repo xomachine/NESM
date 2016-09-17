@@ -42,3 +42,15 @@ suite "Complex tests":
     let smo = mo.serialize()
     let dsmo = MyObj.deserialize(@smo)
     require(mo.repr == dsmo.repr)
+
+  test "Array of tuples":
+    serializable:
+      type
+        MyObj = object
+          a: array[0..7, tuple[a: int32, b: array[5,char]]]
+          b: char
+
+    let mo = MyObj()
+    let smo = mo.serialize()
+    let dsmo = MyObj.deserialize(@smo)
+    require(mo.repr == dsmo.repr)
