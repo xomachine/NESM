@@ -1,6 +1,6 @@
 
 import unittest
-import nest
+import nesm
 
 # Just a codegen test
 serializable:

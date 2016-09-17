@@ -2,8 +2,10 @@
 import macros
 from strutils import `%`, parseInt
 from tables import Table, initTable, contains, `[]`, `[]=`
-#from pegs import peg, match
 from strscans import scanf
+
+when defined(js):
+  error("Non C-like targets non supported yet.")
 
 type
   ObjectInfo = tuple
@@ -13,9 +15,6 @@ type
 
 const SERIALIZER_INPUT_NAME = "obj"
 const DESERIALIZER_DATA_NAME = "data"
-  
-
-#const arraydecl = peg("""^array[0..{\d+}, {.+}]$""")
 
 proc estimateSize(sizes: Table[string, int], thetype: string): int {.compileTime.} =
   case thetype
@@ -28,10 +27,6 @@ proc estimateSize(sizes: Table[string, int], thetype: string): int {.compileTime
       " Consider using " & thetype & "32 or other specific type.")
     0
   else:
-    #var captures = newSeq[string](2)
-    #if thetype.match(arraydecl, captures):
-    #  let arraylen = parseInt(captures[0])
-    #  let arraytype = captures[1]
     var arraylastidx: int
     var arraytype: string
     if scanf(thetype[0..^1], "array[0 .. $i, $*]", arraylastidx, arraytype):
