@@ -1,0 +1,35 @@
+
+from macros import error
+
+
+const basic_types = [
+  "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
+    "bool", "char", "float32", "float64"
+]
+
+type
+  TypeChunk* = object
+    size*: int
+    serialize*: proc(source: string, index: int): seq[NimNode]
+    deserialize*: proc(source: string, index: int): seq[NimNode]
+
+    
+
+
+
+proc isBasic*(thetype: string): bool =
+  thetype in basic_types
+
+proc estimateBasicSize*(thetype: string): int {.compileTime.} =
+  case thetype
+  of "char", "byte", "uint8", "int8", "bool": sizeof(int8)
+  of "uint16", "int16": sizeof(int16)
+  of "uint32", "int32", "float32": sizeof(int32)
+  of "uint64", "int64", "float64": sizeof(int64)
+  of "uint", "int", "float":
+    error(thetype & "'s size is undecided and depends from architecture." &
+      " Consider using " & thetype & "32 or other specific type.")
+    0
+  else:
+    error("Can not estimate size of type " & thetype)
+    0
