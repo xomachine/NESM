@@ -101,7 +101,7 @@ proc estimateSize(sizes: Table[string, int], thetype: string): int {.compileTime
   else:
     var arraylastidx: int
     var arraytype: string
-    if scanf(thetype[0..^1], "array[0 .. $i, $*]", arraylastidx, arraytype):
+    if scanf(thetype[0..^2], "array[0 .. $i, $+", arraylastidx, arraytype):
       (arraylastidx + 1) * estimateSize(sizes, arraytype)
     elif thetype in sizes:
       sizes[thetype]
@@ -160,7 +160,8 @@ proc buildBody(sizes: Table[string, int], selfname: string,
           generateSerializer(size, "tmp[0]" , result.size))))
         result.deserializer.add(
           parseExpr("result.$2 = deserialize($5, $4[$1..$1+$3])" % 
-                    [$result.size, fieldname, $size, DESERIALIZER_DATA_NAME, fieldtype]))
+                    [$result.size, fieldname, $(size-1), DESERIALIZER_DATA_NAME,
+                    fieldtype]))
       else:
         result.serializer.add(
           generateSerializer(size, "$1.$2" % [SERIALIZER_INPUT_NAME, fieldname],
