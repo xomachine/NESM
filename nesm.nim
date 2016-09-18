@@ -34,7 +34,8 @@
 ##      copyMem(result[4].unsafeAddr, obj.diameter.unsafeAddr, 4)
 ##      copyMem(result[8].unsafeAddr, obj.isHollow.unsafeAddr, 1)
 ##  
-##    proc deserialize(q: typedesc[Ball]; data: seq[byte]): Ball =
+##    proc deserialize(q: typedesc[Ball];
+##                     data: string | seq[byte | char | int8 | uint8]): Ball =
 ##      assert(data.len() >= 9, "Given sequence should contain at least 9 bytes!")
 ##      copyMem(result.weight.unsafeAddr, data[0].unsafeAddr, 4)
 ##      copyMem(result.diameter.unsafeAddr, data[4].unsafeAddr, 4)
@@ -115,7 +116,9 @@ proc generateProcs(declared: var Table[string, TypeChunk],
     let deserializer_type = newIdentDefs(newIdentNode("q"),
                                          parseExpr("typedesc[$1]" % name))
     let deserializer_input = newIdentDefs(newIdentNode(DESERIALIZER_DATA_NAME),
-                                          parseExpr("seq[byte]"))
+                                          newIdentNode("string")
+                                          .infix("|",
+                                          parseExpr("seq[byte | char | int8 | uint8]")))
     let serializer_input = newIdentDefs(newIdentNode(SERIALIZER_INPUT_NAME),
                                         deserializer_return)
     declared[name] = info
@@ -176,8 +179,9 @@ when defined(nimdoc):
     ## in top level documentation.
     discard
 
-  proc deserialize*(q: typedesc[TheType], data: seq[byte]): TheType
+  proc deserialize*(q: typedesc[TheType],
+    data: string | seq[byte | char | int8 | uint8]): TheType
     {.raises: AssertionError.} =
-    ## Interprets given sequence of data as serialized `TheType` and deserializes it
+    ## Interprets given data as serialized `TheType` and deserializes it
     ## then.
     discard
