@@ -69,7 +69,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
     for decl in thetype.children():
       expectKind(decl, nnkIdentDefs)
       expectMinLen(decl, 2)
-      let name = $decl[0]
+      let name = $decl[0].basename
       let subtype = decl[1]
       let elem = declared.genTypeChunk(subtype)
       result.size += elem.size
