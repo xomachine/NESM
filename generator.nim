@@ -12,21 +12,23 @@ const basic_deserialize_pattern = "copyMem($1.unsafeAddr, " & DESERIALIZER_DATA_
 
 
 proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeChunk =
-  result.size = 0
+  result.size = newEmptyNode()
   case thetype.kind
   of nnkIdent:
+    # It's a type, declared as identifier. Might be a basic type or
+    # some of previously declared type in serializable block
     let plaintype = $thetype
     if plaintype.isBasic():
       let size = estimateBasicSize(plaintype)
-      result.size = size
-      result.serialize = proc(source: string, index: int): seq[NimNode] =
+      result.size = newIntLitNode(size)
+      result.serialize = proc(source: string, index: string): seq[NimNode] =
         result = newSeq[NimNode]()
         result.add(parseExpr(basic_serialize_pattern %
-                             [source, $index, $size]))
-      result.deserialize = proc(source: string, index: int): seq[NimNode] =
+                             [source, index, size.repr]))
+      result.deserialize = proc(source: string, index: string): seq[NimNode] =
         result = newSeq[NimNode]()
         result.add(parseExpr(basic_deserialize_pattern %
-                           [source, $index, $size]))
+                           [source, index, size.repr]))
     elif plaintype in declared:
       return declared[plaintype]
     else:
@@ -36,32 +38,49 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
       error(("Type $1 is not a basic " % plaintype) &
             "type nor a complex type under 'serializable' block!")
   of nnkBracketExpr:
+    # The template type. typename[someargs]. Only array supported
+    # for now.
     expectMinLen(thetype, 2)
     let name = $thetype[0]
     case name
     of "array":
       expectMinLen(thetype, 3)
       let elemType = thetype[2]
+      let elemTypeString = elemType.repr
       let sizeDecl = thetype[1]
       let arrayLen =
-        case sizeDecl.kind
-        of nnkIntLit:
-          int(sizeDecl.intVal)
-        of nnkInfix:
-          expectLen(thetype, 3)
-          int(sizeDecl[2].intVal) + 1
+        if sizeDecl.kind == nnkInfix and sizeDecl[0].repr == "..":
+          newTree(nnkPar, sizeDecl[2].infix("+", newIntLitNode(1)))
+        else:
+          sizeDecl
+      let onechunk = declared.genTypeChunk(elemType)
+      assert(elemTypeString.len in 1..52, "The length of " &
+        ("expression $1 is too big and " % elemTypeString) &
+        "it is confusing codegenerator. Please consider reducing" &
+        " the length to values less than 52." )
+      let indexlettershift =
+        if not elemTypeString.len in 1..26:
+          6
         else:
           0
-      let onechunk = declared.genTypeChunk(elemType)
-      result.size = onechunk.size * arrayLen
-      result.serialize = proc(source: string, index: int): seq[NimNode] =
-        result = newSeq[NimNode]()
-        for i in 0..<arrayLen:
-          result &= onechunk.serialize(source & "[$1]" % $i, index + i*onechunk.size)
-      result.deserialize = proc(source: string, index: int): seq[NimNode] =
-        result = newSeq[NimNode]()
-        for i in 0..<arrayLen:
-          result &= onechunk.deserialize(source & "[$1]" % $i, index + i*onechunk.size)
+      let indexletter = $chr(ord('@') + elemTypeString.len + indexlettershift)
+      let rangeexpr = newIntLitNode(0).infix("..<",
+        newTree(nnkPar, arrayLen))
+      result.size = newTree(nnkPar, onechunk.size).infix("*", arrayLen)
+      result.serialize = proc(source: string, index: string): seq[NimNode] =
+        let chunk_expr = onechunk.serialize(
+          source & "[$1]" % indexletter,
+          "$1 + ($2 * ($3))" % [index, indexletter, onechunk.size.repr])
+        let forloop = newTree(nnkForStmt, newIdentNode(indexletter),
+          rangeexpr, newTree(nnkStmtList, chunk_expr))
+        result = @[forloop]
+      result.deserialize = proc(source: string, index: string): seq[NimNode] =
+        let chunk_expr = onechunk.deserialize(
+          source & "[$1]" % indexletter,
+          "$1 + ($2 * ($3))" % [index, indexletter, onechunk.size.repr])
+        let forloop = newTree(nnkForStmt, newIdentNode(indexletter),
+          rangeexpr, newTree(nnkStmtList, chunk_expr))
+        result = @[forloop]
     else:
       error("Type $1 is not supported!" % name)
   of nnkTupleTy, nnkRecList:
@@ -72,25 +91,26 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
       let name = $decl[0].basename
       let subtype = decl[1]
       let elem = declared.genTypeChunk(subtype)
-      result.size += elem.size
+      result.size = result.size.infix("+", newTree(nnkPar, elem.size))
       elems[name] = elem
-    result.serialize = proc(source: string, index: int): seq[NimNode] =
+    result.serialize = proc(source: string, index: string): seq[NimNode] =
       result = newSeq[NimNode]()
-      var shift = 0
+      var shift = newIntLitNode(0)
       for n, e in elems.pairs():
-        result &= e.serialize("$1.$2" % [source, n], index+shift)
-        shift += e.size
-    result.deserialize = proc(source: string, index: int): seq[NimNode] =
+        result &= e.serialize("$1.$2" % [source, n],
+          "$1 + ($2)" % [index, shift.repr])
+        shift = shift.infix("+", newTree(nnkPar, e.size))
+    result.deserialize = proc(source: string, index: string): seq[NimNode] =
       result = newSeq[NimNode]()
-      var shift = 0
+      var shift = newIntLitNode(0)
       let pat =
         if source.len > 0:
           source & ".$1"
         else:
           "$1"
       for n, e in elems.pairs():
-        result &= e.deserialize(pat % n, index+shift)
-        shift += e.size
+        result &= e.deserialize(pat % n, "$1 + ($2)" % [index, shift.repr])
+        shift = shift.infix("+", newTree(nnkPar, e.size))
   of nnkObjectTy:
     expectMinLen(thetype, 3)
     assert(thetype[1].kind == nnkEmpty, "Inheritence not supported in serializable")
@@ -100,7 +120,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
     let objectchunk = declared.genTypeChunk(thetype[0])
     result.size = objectchunk.size
     result.serialize = objectchunk.serialize
-    result.deserialize = proc(source: string, index: int): seq[NimNode] =
+    result.deserialize = proc(source: string, index: string): seq[NimNode] =
       result = newSeq[NimNode]()
       result.add(parseExpr("new(result)"))
       result &= objectchunk.deserialize(source, index)
@@ -109,12 +129,12 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
     let basetype = thetype[0]
     let distincted = declared.genTypeChunk(basetype)
     result.size = distincted.size
-    result.serialize = proc(source: string, index: int): seq[NimNode] =
+    result.serialize = proc(source: string, index: string): seq[NimNode] =
       result = newSeq[NimNode]()
       result &= parseExpr("let tmp = cast[$1]($2)" % [basetype.repr, source])
       result &= distincted.serialize("tmp" % [source, basetype.repr], index)
       result = @[newBlockStmt(newStmtList(result))]
-    result.deserialize = proc(source: string, index: int): seq[NimNode] =
+    result.deserialize = proc(source: string, index: string): seq[NimNode] =
       result = newSeq[NimNode]()
       result &= parseExpr("var tmp = cast[$1]($2)" % [basetype.repr, source])
       result &= distincted.deserialize("tmp" % [source, basetype.repr], index)

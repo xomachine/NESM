@@ -111,7 +111,7 @@ proc generateProcs(declared: var Table[string, TypeChunk],
     let name = $obj[0].basename
     let body = obj[2]
     let info = declared.genTypeChunk(body)
-    let serializer_return = parseExpr("array[0..$1, byte]" % $(info.size-1))
+    let serializer_return = parseExpr("array[$1, byte]" % info.size.repr)
     let deserializer_return = newIdentNode(name)
     let deserializer_type = newIdentDefs(newIdentNode("q"),
                                          parseExpr("typedesc[$1]" % name))
@@ -123,14 +123,14 @@ proc generateProcs(declared: var Table[string, TypeChunk],
                                         deserializer_return)
     declared[name] = info
     let sizeProc = parseExpr("""proc size$1(q: typedesc[$2]): int = $3""" %
-                             [ast, name, $info.size])
+                             [ast, name, info.size.repr])
     let serializer = newProc(makeName("serialize"),
       @[serializer_return, serializer_input],
-      newStmtList(info.serialize(SERIALIZER_INPUT_NAME, 0)))
+      newStmtList(info.serialize(SERIALIZER_INPUT_NAME, "0")))
     let deserializer = newProc(makeName("deserialize"),
       @[deserializer_return, deserializer_type, deserializer_input],
-      newStmtList(@[parseExpr(predeserealize_assert % $info.size)] &
-        info.deserialize("result", 0)))
+      newStmtList(@[parseExpr(predeserealize_assert % info.size.repr)] &
+        info.deserialize("result", "0")))
     newStmtList(sizeProc, serializer, deserializer)
   else:
     discard
