@@ -42,6 +42,19 @@ suite "Trivial types":
     check(smi.len == MyAInt.sizeof)
     require(mi.repr == dsmi.repr)
 
+  test "Arrays with constant":
+    const ARRAYSIZE = 11
+    serializable:
+      type
+        MyAInt = distinct array[ARRAYSIZE, int32]
+
+    let mi = MyAInt([ 4'i32 , 5'i32,6'i32,3'i32,3'i32,4'i32,1'i32,
+      1'i32,5'i32,7'i32,8'i32])
+    let smi = mi.serialize()
+    let dsmi = MyAInt.deserialize(@smi)
+    check(smi.len == MyAInt.sizeof)
+    require(mi.repr == dsmi.repr)
+
   test "Tuples":
     serializable:
       type
