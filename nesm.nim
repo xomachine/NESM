@@ -92,26 +92,26 @@ const SERIALIZER_INPUT_NAME = "obj"
 const DESERIALIZER_DATA_NAME = "data"
 const predeserealize_assert = """assert(""" & DESERIALIZER_DATA_NAME &
   """.len >= $1, "Given sequence should contain at least $1 bytes!")"""
-
-proc generateSerialize(typename: string, share_sign: string,
-                       typeinfo: TypeChunk): NimNode =
-  const pattern = """proc serialize$1(""" & SERIALIZER_INPUT_NAME &
-    """: $3): array[$2, byte] = discard"""
-  let size = typeinfo.size.repr
-  result = parseExpr(pattern % [share_sign, size, typename])
-  result.body = newStmtList(
-    typeinfo.serialize(SERIALIZER_INPUT_NAME, "0"))
-
-proc generateDeserialize(typename: string, share_sign: string,
+when not defined(nimdoc):
+  proc generateSerialize(typename: string, share_sign: string,
                          typeinfo: TypeChunk): NimNode =
-  const pat = """proc deserialize$1(t: typedesc[$2],""" &
-    DESERIALIZER_DATA_NAME &
-    """: array[$3, byte | char | int8 | uint8] |""" &
-    """ seq[byte | char | int8 | uint8]):""" &
-    """$2 = discard"""
-  let size = typeinfo.size.repr
-  result = parseExpr(pat % [share_sign, typename, size])
-  result.body = newStmtList(typeinfo.deserialize("result", "0"))
+    const pattern = """proc serialize$1(""" & SERIALIZER_INPUT_NAME &
+      """: $3): array[$2, byte] = discard"""
+    let size = typeinfo.size.repr
+    result = parseExpr(pattern % [share_sign, size, typename])
+    result.body = newStmtList(
+      typeinfo.serialize(SERIALIZER_INPUT_NAME, "0"))
+
+  proc generateDeserialize(typename: string, share_sign: string,
+                           typeinfo: TypeChunk): NimNode =
+    const pat = """proc deserialize$1(t: typedesc[$2],""" &
+      DESERIALIZER_DATA_NAME &
+      """: array[$3, byte | char | int8 | uint8] |""" &
+      """ seq[byte | char | int8 | uint8]):""" &
+      """$2 = discard"""
+    let size = typeinfo.size.repr
+    result = parseExpr(pat % [share_sign, typename, size])
+    result.body = newStmtList(typeinfo.deserialize("result", "0"))
 
 proc generateProcs(declared: var Table[string, TypeChunk],
                     obj: NimNode): NimNode {.compileTime.} =
