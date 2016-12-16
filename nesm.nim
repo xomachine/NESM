@@ -90,7 +90,7 @@ from tables import Table, initTable, contains, `[]`, `[]=`
 
 const SERIALIZER_INPUT_NAME = "obj"
 const DESERIALIZER_DATA_NAME = "data"
-const predeserealize_assert = """assert(""" & DESERIALIZER_DATA_NAME &
+const datasize_check = """assert(""" & DESERIALIZER_DATA_NAME &
   """.len >= $1, "Given sequence should contain at least $1 bytes!")"""
 when not defined(nimdoc):
   proc generateSerialize(typename: string, share_sign: string,
@@ -111,7 +111,8 @@ when not defined(nimdoc):
       """$2 = discard"""
     let size = typeinfo.size.repr
     result = parseExpr(pat % [share_sign, typename, size])
-    result.body = newStmtList(typeinfo.deserialize("result", "0"))
+    result.body = newStmtList(@[parseExpr(datasize_check % size)] &
+      typeinfo.deserialize("result", "0"))
 
 proc generateProcs(declared: var Table[string, TypeChunk],
                     obj: NimNode): NimNode {.compileTime.} =
