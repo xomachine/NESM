@@ -93,6 +93,25 @@ const DESERIALIZER_DATA_NAME = "data"
 const predeserealize_assert = """assert(""" & DESERIALIZER_DATA_NAME &
   """.len >= $1, "Given sequence should contain at least $1 bytes!")"""
 
+proc generateSerialize(typename: string, share_sign: string,
+                       typeinfo: TypeChunk): NimNode =
+  const pattern = """proc serialize$1(""" & SERIALIZER_INPUT_NAME &
+    """: $3): array[$2, byte] = discard"""
+  let size = typeinfo.size.repr
+  result = parseExpr(pattern % [share_sign, size, typename])
+  result.body = newStmtList(
+    typeinfo.serialize(SERIALIZER_INPUT_NAME, "0"))
+
+proc generateDeserialize(typename: string, share_sign: string,
+                         typeinfo: TypeChunk): NimNode =
+  const pat = """proc deserialize$1(t: typedesc[$2],""" &
+    DESERIALIZER_DATA_NAME &
+    """: array[$3, byte | char | int8 | uint8] |""" &
+    """ seq[byte | char | int8 | uint8]):""" &
+    """$2 = discard"""
+  let size = typeinfo.size.repr
+  result = parseExpr(pat % [share_sign, typename, size])
+  result.body = newStmtList(typeinfo.deserialize("result", "0"))
 
 proc generateProcs(declared: var Table[string, TypeChunk],
                     obj: NimNode): NimNode {.compileTime.} =
@@ -100,37 +119,15 @@ proc generateProcs(declared: var Table[string, TypeChunk],
     expectKind(obj, nnkTypeDef)
     expectMinLen(obj, 3)
     expectKind(obj[1], nnkEmpty)
-    let is_shared = obj[0].kind == nnkPostfix
-    let ast = if is_shared: "*" else: ""
-    proc makeName(q:string):NimNode =
-      let name = newIdentNode(q)
-      if is_shared:
-        name.postfix("*")
-      else:
-        name
+    let share_sign = if obj[0].kind == nnkPostfix: "*" else: ""
     let name = $obj[0].basename
     let body = obj[2]
     let info = declared.genTypeChunk(body)
-    let serializer_return = parseExpr("array[$1, byte]" % info.size.repr)
-    let deserializer_return = newIdentNode(name)
-    let deserializer_type = newIdentDefs(newIdentNode("q"),
-                                         parseExpr("typedesc[$1]" % name))
-    let deserializer_input = newIdentDefs(newIdentNode(DESERIALIZER_DATA_NAME),
-                                          newIdentNode("string")
-                                          .infix("|",
-                                          parseExpr("seq[byte | char | int8 | uint8]")))
-    let serializer_input = newIdentDefs(newIdentNode(SERIALIZER_INPUT_NAME),
-                                        deserializer_return)
     declared[name] = info
-    let sizeProc = parseExpr("""proc size$1(q: typedesc[$2]): int = $3""" %
-                             [ast, name, info.size.repr])
-    let serializer = newProc(makeName("serialize"),
-      @[serializer_return, serializer_input],
-      newStmtList(info.serialize(SERIALIZER_INPUT_NAME, "0")))
-    let deserializer = newProc(makeName("deserialize"),
-      @[deserializer_return, deserializer_type, deserializer_input],
-      newStmtList(@[parseExpr(predeserealize_assert % info.size.repr)] &
-        info.deserialize("result", "0")))
+    let sizeProc = parseExpr(("""proc size$1(q: typedesc[$2]):""" &
+      """ int = $3""") % [share_sign, name, info.size.repr])
+    let serializer = generateSerialize(name, share_sign, info)
+    let deserializer = generateDeserialize(name, share_sign, info)
     newStmtList(sizeProc, serializer, deserializer)
   else:
     discard
