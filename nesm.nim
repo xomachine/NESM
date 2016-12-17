@@ -90,29 +90,23 @@ from tables import Table, initTable, contains, `[]`, `[]=`
 
 const SERIALIZER_INPUT_NAME = "obj"
 const DESERIALIZER_DATA_NAME = "data"
-const datasize_check = """assert(""" & DESERIALIZER_DATA_NAME &
+const DATASIZE_CHECK = """assert(""" & DESERIALIZER_DATA_NAME &
   """.len >= $1, "Given sequence should contain at least $1 bytes!")"""
-when not defined(nimdoc):
-  proc generateSerialize(typename: string, share_sign: string,
-                         typeinfo: TypeChunk): NimNode =
-    const pattern = """proc serialize$1(""" & SERIALIZER_INPUT_NAME &
-      """: $3): array[$2, byte] = discard"""
-    let size = typeinfo.size.repr
-    result = parseExpr(pattern % [share_sign, size, typename])
-    result.body = newStmtList(
-      typeinfo.serialize(SERIALIZER_INPUT_NAME, "0"))
+const SERIALIZE_DECLARATION = """proc serialize$1(""" &
+  SERIALIZER_INPUT_NAME & """: $3): array[$2, byte] = discard"""
+const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
+  """(t: typedesc[$3],""" & DESERIALIZER_DATA_NAME &
+  """: array[$2, byte | char | int8 | uint8] |""" &
+  """ seq[byte | char | int8 | uint8]):""" &
+  """$3 = discard"""
+const SIZE_DECLARATION = """proc size$1(q: typedesc[$3]): int = $2"""
 
-  proc generateDeserialize(typename: string, share_sign: string,
-                           typeinfo: TypeChunk): NimNode =
-    const pat = """proc deserialize$1(t: typedesc[$2],""" &
-      DESERIALIZER_DATA_NAME &
-      """: array[$3, byte | char | int8 | uint8] |""" &
-      """ seq[byte | char | int8 | uint8]):""" &
-      """$2 = discard"""
-    let size = typeinfo.size.repr
-    result = parseExpr(pat % [share_sign, typename, size])
-    result.body = newStmtList(@[parseExpr(datasize_check % size)] &
-      typeinfo.deserialize("result", "0"))
+when not defined(nimdoc):
+  proc generateProc(pattern: string, name: string, sign: string,
+                size: string, body: seq[NimNode] = @[]): NimNode =
+    result = parseExpr(pattern % [sign, size, name])
+    if len(body) > 0:
+      result.body = newStmtList(body)
 
 proc generateProcs(declared: var Table[string, TypeChunk],
                     obj: NimNode): NimNode {.compileTime.} =
@@ -120,15 +114,21 @@ proc generateProcs(declared: var Table[string, TypeChunk],
     expectKind(obj, nnkTypeDef)
     expectMinLen(obj, 3)
     expectKind(obj[1], nnkEmpty)
-    let share_sign = if obj[0].kind == nnkPostfix: "*" else: ""
-    let name = $obj[0].basename
+    let typename = obj[0]
+    let name = $typename.basename
+    let sign =
+      if typename.kind == nnkPostfix: "*"
+      else: ""
     let body = obj[2]
     let info = declared.genTypeChunk(body)
+    let size = info.size.repr
     declared[name] = info
-    let sizeProc = parseExpr(("""proc size$1(q: typedesc[$2]):""" &
-      """ int = $3""") % [share_sign, name, info.size.repr])
-    let serializer = generateSerialize(name, share_sign, info)
-    let deserializer = generateDeserialize(name, share_sign, info)
+    let serializer = generateProc(SERIALIZE_DECLARATION, name, sign,
+      size, info.serialize(SERIALIZER_INPUT_NAME, "0"))
+    let deserializer = generateProc(DESERIALIZE_DECLARATION,
+      name, sign, size, @[parseExpr(DATASIZE_CHECK % size)] &
+      info.deserialize("result", "0"))
+    let sizeProc = generateProc(SIZE_DECLARATION, name, sign, size)
     newStmtList(sizeProc, serializer, deserializer)
   else:
     discard
