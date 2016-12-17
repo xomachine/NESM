@@ -90,8 +90,6 @@ from strutils import `%`
 from tables import Table, initTable, contains, `[]`, `[]=`
 
 const SERIALIZER_INPUT_NAME = "obj"
-const DATASIZE_CHECK = """assert(""" & DESERIALIZER_DATA_NAME &
-  """.len >= $1, "Given sequence should contain at least $1 bytes!")"""
 const SERIALIZE_DECLARATION = """proc serialize$1(""" &
   SERIALIZER_INPUT_NAME & """: $3): array[$2, byte] = discard"""
 const DESERIALIZE_DECLARATION = """proc deserialize$1""" &

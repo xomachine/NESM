@@ -7,9 +7,6 @@ from strutils import `%`
 const DESERIALIZER_DATA_NAME* = "data"
 const DESERIALIZER_RECEIVER_NAME* = "obtain"
 const basic_serialize_pattern = "copyMem(result[$2].unsafeAddr, $1.unsafeAddr, $3)"
-const basic_deserialize_pattern = "copyMem($1.unsafeAddr, (" &
-                                  DESERIALIZER_DATA_NAME &
-                                  "($3)).unsafeAddr, $3)"
 const DESERIALIZE_PATTERN = """
 let thedata = """ & DESERIALIZER_RECEIVER_NAME & """($2)
 assert(len(thedata) == $2, """ &
