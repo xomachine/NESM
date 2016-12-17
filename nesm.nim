@@ -91,7 +91,19 @@ from tables import Table, initTable, contains, `[]`, `[]=`
 
 const SERIALIZER_INPUT_NAME = "obj"
 const SERIALIZE_DECLARATION = """proc serialize$1(""" &
-  SERIALIZER_INPUT_NAME & """: $3): array[$2, byte] = discard"""
+  SERIALIZER_INPUT_NAME & """: $3): seq[byte] = discard"""
+const SERIALIZE_WRITER_CONVERSION = """
+var index: uint = 0
+result = newSeq[byte]($1)
+let r_ptr = cast[uint](result[0].unsafeAddr)
+var writer = proc(a: pointer, size: uint) =
+  copyMem(cast[pointer](r_ptr + index), a, size)
+  index += size
+serialize(""" & SERIALIZER_INPUT_NAME & """, writer)
+"""
+const SERIALIZE_WRITER_DECLARATION = "proc serialize$1(" &
+  SERIALIZER_INPUT_NAME & ": $3, writer: proc(a:pointer, s:uint))" &
+  " = discard"
 const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
   """(t: typedesc[$3], """ & DESERIALIZER_DATA_NAME &
   """: array[$2, byte | char | int8 | uint8] |""" &
@@ -112,7 +124,6 @@ proc obtain(count: int): seq[byte] =
   index = lastindex
 result = deserialize(type(result), obtain)
 """
-
 const DESERIALIZE_OBTAINER_DECLARATION = "proc deserialize$1" &
   "(t: typedesc[$3], " & DESERIALIZER_RECEIVER_NAME &
   ": proc (count: int): (seq[byte | int8 | uint8 | char] | string)" &
@@ -141,8 +152,12 @@ proc generateProcs(declared: var Table[string, TypeChunk],
     let info = declared.genTypeChunk(body)
     let size = info.size.repr
     declared[name] = info
+    let writer_conversion =
+      @[parseStmt(SERIALIZE_WRITER_CONVERSION % size)]
     let serializer = generateProc(SERIALIZE_DECLARATION, name, sign,
-      size, info.serialize(SERIALIZER_INPUT_NAME, "0"))
+      size, writer_conversion)
+    let serialize_writer = generateProc(SERIALIZE_WRITER_DECLARATION,
+      name, sign, size, info.serialize(SERIALIZER_INPUT_NAME))
     let obtainer_conversion =
       @[parseStmt(DESERIALIZE_OBTAINER_CONVERSION % size)]
     let deserializer = generateProc(DESERIALIZE_DECLARATION,
@@ -151,8 +166,8 @@ proc generateProcs(declared: var Table[string, TypeChunk],
       DESERIALIZE_OBTAINER_DECLARATION, name, sign, size,
       info.deserialize("result"))
     let sizeProc = generateProc(SIZE_DECLARATION, name, sign, size)
-    newStmtList(sizeProc, serializer, deserialize_obtainer,
-                deserializer)
+    newStmtList(sizeProc, serialize_writer, serializer,
+                deserialize_obtainer, deserializer)
   else:
     discard
 

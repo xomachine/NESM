@@ -6,14 +6,16 @@ from strutils import `%`
 
 const DESERIALIZER_DATA_NAME* = "data"
 const DESERIALIZER_RECEIVER_NAME* = "obtain"
-const basic_serialize_pattern = "copyMem(result[$2].unsafeAddr, $1.unsafeAddr, $3)"
+# $1 - target object field; $2 - size of data to obtain
 const DESERIALIZE_PATTERN = """
 let thedata = """ & DESERIALIZER_RECEIVER_NAME & """($2)
 assert(len(thedata) == $2, """ &
   """"The length of received data is not equal to $2")
 copyMem($1.unsafeAddr, thedata[0].unsafeAddr, $2)
 """
-# $1 - target object field; $2 - size of data to obtain
+const SERIALIZE_PATTERN = """
+writer($1.unsafeAddr, $2)
+"""
 
 proc makeNimNode(pattern: string, target: string,
                  size: string): NimNode {.compileTime.} =
@@ -31,10 +33,9 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
     if plaintype.isBasic():
       let size = estimateBasicSize(plaintype)
       result.size = newIntLitNode(size)
-      result.serialize = proc(source: string, index: string): seq[NimNode] =
+      result.serialize = proc(source: string): seq[NimNode] =
         result = newSeq[NimNode]()
-        result.add(parseExpr(basic_serialize_pattern %
-                             [source, index, size.repr]))
+        result.add(parseExpr(SERIALIZE_PATTERN % [source, size.repr]))
       result.deserialize = proc(source: string): seq[NimNode] =
         result = newSeq[NimNode]()
         result.add(makeNimNode(DESERIALIZE_PATTERN, source, size.repr))
@@ -76,16 +77,15 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
       let rangeexpr = newIntLitNode(0).infix("..<",
         newTree(nnkPar, arrayLen))
       result.size = newTree(nnkPar, onechunk.size).infix("*", arrayLen)
-      result.serialize = proc(source: string, index: string): seq[NimNode] =
-        let chunk_expr = onechunk.serialize(
-          source & "[$1]" % indexletter,
-          "$1 + ($2 * ($3))" % [index, indexletter, onechunk.size.repr])
+      result.serialize = proc(source: string): seq[NimNode] =
+        let chunk_expr =
+          onechunk.serialize(source & "[$1]" % indexletter)
         let forloop = newTree(nnkForStmt, newIdentNode(indexletter),
           rangeexpr, newTree(nnkStmtList, chunk_expr))
         result = @[forloop]
       result.deserialize = proc(source: string): seq[NimNode] =
-        let chunk_expr = onechunk.deserialize(source &
-          "[$1]" % indexletter)
+        let chunk_expr =
+          onechunk.deserialize(source & "[$1]" % indexletter)
         let forloop = newTree(nnkForStmt, newIdentNode(indexletter),
           rangeexpr, newTree(nnkStmtList, chunk_expr))
         result = @[forloop]
@@ -101,13 +101,10 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
       let elem = declared.genTypeChunk(subtype)
       result.size = result.size.infix("+", newTree(nnkPar, elem.size))
       elems[name] = elem
-    result.serialize = proc(source: string, index: string): seq[NimNode] =
+    result.serialize = proc(source: string): seq[NimNode] =
       result = newSeq[NimNode]()
-      var shift = newIntLitNode(0)
       for n, e in elems.pairs():
-        result &= e.serialize("$1.$2" % [source, n],
-          "$1 + ($2)" % [index, shift.repr])
-        shift = shift.infix("+", newTree(nnkPar, e.size))
+        result &= e.serialize("$1.$2" % [source, n])
     result.deserialize = proc(source: string): seq[NimNode] =
       result = newSeq[NimNode]()
       let pat =
@@ -135,10 +132,11 @@ proc genTypeChunk*(declared: Table[string, TypeChunk], thetype: NimNode): TypeCh
     let basetype = thetype[0]
     let distincted = declared.genTypeChunk(basetype)
     result.size = distincted.size
-    result.serialize = proc(source: string, index: string): seq[NimNode] =
+    result.serialize = proc(source: string): seq[NimNode] =
       result = newSeq[NimNode]()
-      result &= parseExpr("let tmp = cast[$1]($2)" % [basetype.repr, source])
-      result &= distincted.serialize("tmp" % [source, basetype.repr], index)
+      result &= parseExpr("let tmp = cast[$1]($2)" %
+        [basetype.repr, source])
+      result &= distincted.serialize("tmp" % [source, basetype.repr])
       result = @[newBlockStmt(newStmtList(result))]
     result.deserialize = proc(source: string): seq[NimNode] =
       result = newSeq[NimNode]()

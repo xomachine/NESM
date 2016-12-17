@@ -9,7 +9,7 @@ const basic_types = [
 type
   TypeChunk* = object
     size*: NimNode
-    serialize*: proc(source: string, index: string): seq[NimNode]
+    serialize*: proc(source: string): seq[NimNode]
     deserialize*: proc(source: string): seq[NimNode]
 
 proc isBasic*(thetype: string): bool =
