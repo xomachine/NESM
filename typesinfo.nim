@@ -10,7 +10,7 @@ type
   TypeChunk* = object
     size*: NimNode
     serialize*: proc(source: string, index: string): seq[NimNode]
-    deserialize*: proc(source: string, index: string): seq[NimNode]
+    deserialize*: proc(source: string): seq[NimNode]
 
 proc isBasic*(thetype: string): bool =
   thetype in basic_types

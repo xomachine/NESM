@@ -81,7 +81,8 @@ when defined(js):
 import macros
 when not defined(nimdoc):
   from typesinfo import TypeChunk
-  from generator import genTypeChunk
+  from generator import genTypeChunk, DESERIALIZER_DATA_NAME,
+    DESERIALIZER_RECEIVER_NAME
 else:
   type TypeChunk = object
 
@@ -89,16 +90,35 @@ from strutils import `%`
 from tables import Table, initTable, contains, `[]`, `[]=`
 
 const SERIALIZER_INPUT_NAME = "obj"
-const DESERIALIZER_DATA_NAME = "data"
 const DATASIZE_CHECK = """assert(""" & DESERIALIZER_DATA_NAME &
   """.len >= $1, "Given sequence should contain at least $1 bytes!")"""
 const SERIALIZE_DECLARATION = """proc serialize$1(""" &
   SERIALIZER_INPUT_NAME & """: $3): array[$2, byte] = discard"""
 const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
-  """(t: typedesc[$3],""" & DESERIALIZER_DATA_NAME &
+  """(t: typedesc[$3], """ & DESERIALIZER_DATA_NAME &
   """: array[$2, byte | char | int8 | uint8] |""" &
-  """ seq[byte | char | int8 | uint8]):""" &
+  """ seq[byte | char | int8 | uint8] | string):""" &
   """$3 = discard"""
+const DESERIALIZE_OBTAINER_CONVERSION = """
+let datalen = """ & DESERIALIZER_DATA_NAME &
+  """.len
+assert(datalen >= $1, "Given sequence should contain at""" &
+  """least $1 bytes!")
+var index = 0
+proc obtain(count: int): seq[byte] =
+  let lastindex =
+    if index + count < datalen: index + count
+    else: datalen
+  result = cast[seq[byte]](""" & DESERIALIZER_DATA_NAME &
+  """[index..<lastindex])
+  index = lastindex
+result = deserialize(type(result), obtain)
+"""
+
+const DESERIALIZE_OBTAINER_DECLARATION = "proc deserialize$1" &
+  "(t: typedesc[$3], " & DESERIALIZER_RECEIVER_NAME &
+  ": proc (count: int): (seq[byte | int8 | uint8 | char] | string)" &
+  "): $3 = discard"
 const SIZE_DECLARATION = """proc size$1(q: typedesc[$3]): int = $2"""
 
 when not defined(nimdoc):
@@ -125,11 +145,16 @@ proc generateProcs(declared: var Table[string, TypeChunk],
     declared[name] = info
     let serializer = generateProc(SERIALIZE_DECLARATION, name, sign,
       size, info.serialize(SERIALIZER_INPUT_NAME, "0"))
+    let obtainer_conversion =
+      @[parseStmt(DESERIALIZE_OBTAINER_CONVERSION % size)]
     let deserializer = generateProc(DESERIALIZE_DECLARATION,
-      name, sign, size, @[parseExpr(DATASIZE_CHECK % size)] &
-      info.deserialize("result", "0"))
+      name, sign, size, obtainer_conversion)
+    let deserialize_obtainer = generateProc(
+      DESERIALIZE_OBTAINER_DECLARATION, name, sign, size,
+      info.deserialize("result"))
     let sizeProc = generateProc(SIZE_DECLARATION, name, sign, size)
-    newStmtList(sizeProc, serializer, deserializer)
+    newStmtList(sizeProc, serializer, deserialize_obtainer,
+                deserializer)
   else:
     discard
 
