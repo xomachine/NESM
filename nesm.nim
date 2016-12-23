@@ -87,35 +87,35 @@ else:
   type TypeChunk = object
 
 from strutils import `%`
+from sequtils import toSeq
 from tables import Table, initTable, contains, `[]`, `[]=`
 
 const SERIALIZER_INPUT_NAME = "obj"
 const SERIALIZE_DECLARATION = """proc serialize$1(""" &
-  SERIALIZER_INPUT_NAME & """: $3): seq[byte] = discard"""
+  SERIALIZER_INPUT_NAME & """: $2): seq[byte] = discard"""
 const SERIALIZE_WRITER_CONVERSION = """
 var index: uint = 0
-result = newSeq[byte]($1)
+result = newSeq[byte]($1.size())
 let r_ptr = cast[uint](result[0].unsafeAddr)
-var writer = proc(a: pointer, size: uint) =
+var writer = proc(a: pointer, size: Natural) =
   copyMem(cast[pointer](r_ptr + index), a, size)
   index += size
 serialize(""" & SERIALIZER_INPUT_NAME & """, writer)
 """
 const SERIALIZE_WRITER_DECLARATION = "proc serialize$1(" &
-  SERIALIZER_INPUT_NAME & ": $3, writer: proc(a:pointer, s:uint))" &
+  SERIALIZER_INPUT_NAME & ": $2, writer: proc(a:pointer, s:Natural))" &
   " = discard"
 const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
-  """(t: typedesc[$3], """ & DESERIALIZER_DATA_NAME &
-  """: array[$2, byte | char | int8 | uint8] |""" &
-  """ seq[byte | char | int8 | uint8] | string):""" &
-  """$3 = discard"""
+  """(thetype: typedesc[$2], """ & DESERIALIZER_DATA_NAME &
+  """: seq[byte | char | int8 | uint8] | string):""" &
+  """$2 = discard"""
 const DESERIALIZE_OBTAINER_CONVERSION = """
 let datalen = """ & DESERIALIZER_DATA_NAME &
   """.len
-assert(datalen >= $1, "Given sequence should contain at""" &
+assert(datalen >= $1.size(), "Given sequence should contain at""" &
   """least $1 bytes!")
 var index = 0
-proc obtain(count: int): seq[byte] =
+proc obtain(count: Natural): seq[byte] =
   let lastindex =
     if index + count < datalen: index + count
     else: datalen
@@ -125,20 +125,24 @@ proc obtain(count: int): seq[byte] =
 result = deserialize(type(result), obtain)
 """
 const DESERIALIZE_OBTAINER_DECLARATION = "proc deserialize$1" &
-  "(t: typedesc[$3], " & DESERIALIZER_RECEIVER_NAME &
-  ": proc (count: int): (seq[byte | int8 | uint8 | char] | string)" &
-  "): $3 = discard"
-const SIZE_DECLARATION = """proc size$1(q: typedesc[$3]): int = $2"""
+  "(thetype: typedesc[$2], " & DESERIALIZER_RECEIVER_NAME &
+  ": proc (count: Natural): (seq[byte | int8 | uint8 | char] | string)" &
+  "): $2 = discard"
+const STATIC_SIZE_DECLARATION =
+  """proc size$1(thetype: typedesc[$2]): int = discard"""
+const SIZE_DECLARATION = "proc size$1(" & SERIALIZER_INPUT_NAME &
+                         ": $2): int = discard"
 
 when not defined(nimdoc):
   proc generateProc(pattern: string, name: string, sign: string,
-                size: string, body: seq[NimNode] = @[]): NimNode =
-    result = parseExpr(pattern % [sign, size, name])
+                body: seq[NimNode] = @[]): NimNode =
+    result = parseExpr(pattern % [sign, name])
     if len(body) > 0:
       result.body = newStmtList(body)
 
 proc generateProcs(declared: var Table[string, TypeChunk],
-                    obj: NimNode): NimNode {.compileTime.} =
+                 obj: NimNode,
+                 is_static: bool = false): NimNode {.compileTime.} =
   when not defined(nimdoc):
     expectKind(obj, nnkTypeDef)
     expectMinLen(obj, 3)
@@ -149,39 +153,53 @@ proc generateProcs(declared: var Table[string, TypeChunk],
       if typename.kind == nnkPostfix: "*"
       else: ""
     let body = obj[2]
-    let info = declared.genTypeChunk(body)
-    let size = info.size.repr
+    let info = declared.genTypeChunk(body, is_static)
+    let size_node = info.size(SERIALIZER_INPUT_NAME)
+    let size_arg =
+      if is_static: "type($1)"
+      else: "$1"
     declared[name] = info
     let writer_conversion =
-      @[parseStmt(SERIALIZE_WRITER_CONVERSION % size)]
+      @[parseStmt(SERIALIZE_WRITER_CONVERSION % (size_arg %
+        SERIALIZER_INPUT_NAME))]
     let serializer = generateProc(SERIALIZE_DECLARATION, name, sign,
-      size, writer_conversion)
+      writer_conversion)
     let serialize_writer = generateProc(SERIALIZE_WRITER_DECLARATION,
-      name, sign, size, info.serialize(SERIALIZER_INPUT_NAME))
+      name, sign, info.serialize(SERIALIZER_INPUT_NAME))
     let obtainer_conversion =
-      @[parseStmt(DESERIALIZE_OBTAINER_CONVERSION % size)]
-    let deserializer = generateProc(DESERIALIZE_DECLARATION,
-      name, sign, size, obtainer_conversion)
+      if is_static:
+        @[parseStmt(DESERIALIZE_OBTAINER_CONVERSION % size_arg %
+                    "result")]
+      else: @[]
+    let deserializer =
+      if is_static:
+        generateProc(DESERIALIZE_DECLARATION, name, sign,
+                     obtainer_conversion)
+      else: newEmptyNode()
     let deserialize_obtainer = generateProc(
-      DESERIALIZE_OBTAINER_DECLARATION, name, sign, size,
+      DESERIALIZE_OBTAINER_DECLARATION, name, sign,
       info.deserialize("result"))
-    let sizeProc = generateProc(SIZE_DECLARATION, name, sign, size)
+    let size_declaration =
+      if is_static: STATIC_SIZE_DECLARATION
+      else: SIZE_DECLARATION
+    let sizeProc = generateProc(size_declaration, name, sign,
+                                @[size_node])
     newStmtList(sizeProc, serialize_writer, serializer,
                 deserialize_obtainer, deserializer)
   else:
     discard
 
 proc prepare(declared: var Table[string, TypeChunk],
-             statements: NimNode): NimNode {.compileTime.} =
-  when defined(debug):
-    hint(statements.treeRepr)
+             statements: NimNode,
+             is_static: bool = false): NimNode {.compileTime.} =
   result = newStmtList()
   case statements.kind
-  of nnkStmtList, nnkTypeSection:
+  of nnkStmtList, nnkTypeSection, nnkStaticStmt:
+    let not_dynamic = statements.kind == nnkStaticStmt or is_static
     for child in statements.children():
-      result.add(declared.prepare(child))
+      result.add(declared.prepare(child, not_dynamic))
   of nnkTypeDef:
-    result.add(declared.generateProcs(statements))
+    result.add(declared.generateProcs(statements, is_static))
   else:
     error("Only type declarations can be serializable")
 
@@ -195,7 +213,9 @@ macro serializable*(typedecl: untyped): untyped =
   ##     # Type declaration
   ##
   var declared = initTable[string, TypeChunk]()
-  result = newStmtList(typedecl)
+  result = newStmtList(toSeq(typedecl.children))
+  when defined(debug):
+    hint(typedecl.treeRepr)
   result.add(declared.prepare(typedecl))
   when defined(debug):
     hint(result.repr)
