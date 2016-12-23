@@ -4,14 +4,16 @@ import nesm
 
 # Just a codegen test
 serializable:
-  type
-    MySInt* = distinct int32
+  static:
+    type
+      MySInt* = distinct int32
 
 suite "Trivial types":
   test "Direct typing":
     serializable:
-      type
-        MyInt = int32
+      static:
+        type
+          MyInt = int32
 
     let mi = MyInt(4)
     let smi = mi.serialize()
@@ -21,8 +23,9 @@ suite "Trivial types":
 
   test "Distinct typing":
     serializable:
-      type
-        MyDInt = distinct int32
+      static:
+        type
+          MyDInt = distinct int32
 
     let mdi = MyDInt(4)
     let smdi = mdi.serialize()
@@ -32,8 +35,9 @@ suite "Trivial types":
 
   test "Arrays":
     serializable:
-      type
-        MyAInt = distinct array[0..10, int32]
+      static:
+        type
+          MyAInt = distinct array[0..10, int32]
 
     let mi = MyAInt([ 4'i32 , 5'i32,6'i32,3'i32,3'i32,4'i32,1'i32,
       1'i32,5'i32,7'i32,8'i32])
@@ -45,8 +49,9 @@ suite "Trivial types":
   test "Arrays with constant":
     const ARRAYSIZE = 11
     serializable:
-      type
-        MyAInt = distinct array[ARRAYSIZE, int32]
+      static:
+        type
+          MyAInt = distinct array[ARRAYSIZE, int32]
 
     let mi = MyAInt([ 4'i32 , 5'i32,6'i32,3'i32,3'i32,4'i32,1'i32,
       1'i32,5'i32,7'i32,8'i32])
@@ -57,8 +62,9 @@ suite "Trivial types":
 
   test "Tuples":
     serializable:
-      type
-        MyAInt =  tuple[q:char, w:int64]
+      static:
+        type
+          MyAInt =  tuple[q:char, w:int64]
 
     let mi = MyAInt((q:'q',w:4'i64))
     let smi = mi.serialize()

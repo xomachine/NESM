@@ -6,10 +6,11 @@ import nesm
 suite "Complex tests":
   test "Simple object":
     serializable:
-      type
-        MyObj = object
-          a: bool
-          b: array[0..5, int16]
+      static:
+        type
+          MyObj = object
+            a: bool
+            b: array[0..5, int16]
 
     let mo = MyObj()
     let smo = mo.serialize()
@@ -18,10 +19,11 @@ suite "Complex tests":
 
   test "Nested array object":
     serializable:
-      type
-        MyObj = object
-          a: bool
-          b: array[0..5, array[0..5, int16]]
+      static:
+        type
+          MyObj = object
+            a: bool
+            b: array[0..5, array[0..5, int16]]
 
     let mo = MyObj()
     let smo = mo.serialize()
@@ -30,13 +32,14 @@ suite "Complex tests":
   
   test "Nested object":
     serializable:
-      type
-        MyNestedObj = object
-          a: array[0..7, float32]
-          b: char
-        MyObj = object
-          a: bool
-          b: MyNestedObj
+      static:
+        type
+          MyNestedObj = object
+            a: array[0..7, float32]
+            b: char
+          MyObj = object
+            a: bool
+            b: MyNestedObj
 
     let mo = MyObj()
     let smo = mo.serialize()
@@ -45,10 +48,11 @@ suite "Complex tests":
 
   test "Array of tuples":
     serializable:
-      type
-        MyObj = object
-          a: array[0..7, tuple[a: int32, b: array[5,char]]]
-          b: char
+      static:
+        type
+          MyObj = object
+            a: array[0..7, tuple[a: int32, b: array[5,char]]]
+            b: char
 
     let mo = MyObj()
     let smo = mo.serialize()
