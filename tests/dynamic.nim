@@ -76,3 +76,23 @@ suite "Dynamic structure tests":
       require(obj.a[i].len == another_obj.a[i].len)
       check(equalMem(obj.a[i][0].unsafeAddr,
             another_obj.a[i][0].unsafeAddr, obj.a[i].len))
+  test "String":
+    serializable:
+      type
+        MyObj = object
+          a: int32
+          b: string
+          c: int32
+    var o: MyObj
+    o.a = random(1000).int32
+    o.c = random(1000).int32
+    var random_str = newSeqWith(random(1..100),
+                                char(random(ord('A')..ord('Z'))))
+    o.b = cast[string](random_str)
+    let rnw = get_reader_n_writer()
+    o.serialize(rnw.writer)
+    let ao = MyObj.deserialize(rnw.reader)
+    check(o.a == ao.a)
+    require(o.b.len == ao.b.len)
+    check(o.c == ao.c)
+    check(equalMem(o.b[0].unsafeAddr, ao.b[0].unsafeAddr, o.b.len))
