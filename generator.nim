@@ -54,6 +54,11 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         result.add(makeNimNode(DESERIALIZE_PATTERN, source, size.repr))
     elif plaintype in declared:
       return declared[plaintype]
+    elif thetype.repr == "string" and not is_static:
+      let len_proc = proc (s: string):NimNode =
+        parseExpr("len($1)" % s)
+      result = declared.genPeriodic(newEmptyNode(), len_proc,
+                                    is_static)
     else:
       if plaintype in ["float", "int", "uint"]:
         error(("The type $1 is not allowed due to ambiguity. Consider using $1" %
@@ -126,7 +131,8 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         result &= e.deserialize(pat % n)
   of nnkObjectTy:
     expectMinLen(thetype, 3)
-    assert(thetype[1].kind == nnkEmpty, "Inheritence not supported in serializable")
+    assert(thetype[1].kind == nnkEmpty,
+           "Inheritence not supported in serializable")
     return declared.genTypeChunk(thetype[2], is_static)
   of nnkRefTy:
     expectMinLen(thetype, 1)
@@ -164,18 +170,29 @@ proc genPeriodic(declared: Table[string, TypeChunk], elem: NimNode,
                  length: proc (s:string): NimNode,
                  is_static: bool): TypeChunk =
   let elemString = elem.repr
-  let onechunk = declared.genTypeChunk(elem, is_static)
-  assert(elemString.len in 1..52, "The length of " &
+  let onechunk =
+    if elem.kind != nnkEmpty:
+      declared.genTypeChunk(elem, is_static)
+    else:
+      declared.genTypeChunk(newIdentNode("char"), is_static)
+  assert(elemString.len in 0..52, "The length of " &
     ("expression $1 is too big and " % elemString) &
     "it is confusing codegenerator. Please consider reducing" &
     " the length to values less than 52." )
   let indexlettershift =
-    if not elemString.len in 1..26:
+    if elemString.len > 26:
       6
-    else:
+    elif elemString.len > 0:
       0
+    else:
+      ord('s')
+  let if_string =
+    if elemString.len == 0:
+      "tring_counter"
+    else:
+      ""
   let indexletter = $chr(ord('@') + elemString.len +
-                         indexlettershift)
+                         indexlettershift) & if_string
   let size_header_chunk = declared.genTypeChunk(
     newIdentNode("uint32"), is_static)
   result.size = proc (source: string): NimNode =
@@ -213,7 +230,8 @@ proc genPeriodic(declared: Table[string, TypeChunk], elem: NimNode,
     let periodic_len_varname = "$1_size" % indexletter
     if periodic_len.kind == nnkCall:
       result.add(newVarStmt(newIdentNode(periodic_len_varname),
-                            newIntLitNode(0).newDotExpr(newIdentNode("uint32"))))
+                            newIntLitNode(0)
+                              .newDotExpr(newIdentNode("uint32"))))
       result &= size_header_chunk.deserialize(periodic_len_varname)
     let array_len =
       if periodic_len.kind == nnkCall:
@@ -221,7 +239,12 @@ proc genPeriodic(declared: Table[string, TypeChunk], elem: NimNode,
           .newDotExpr(newIdentNode("int"))
       else: periodic_len
     if periodic_len.kind == nnkCall:
-      result.add(parseExpr("$1 = newSeq[$2]($3)" %
+      let init_template =
+        if elemString.len == 0:
+          "$1 = newString($3)"
+        else:
+          "$1 = newSeq[$2]($3)"
+      result.add(parseExpr(init_template %
                  [source, elemString, array_len.repr]))
     let rangeexpr = newIntLitNode(0).infix("..<",
       newTree(nnkPar, array_len))
