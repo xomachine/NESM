@@ -54,7 +54,26 @@ suite "Dynamic structure tests":
     let rnw = get_reader_n_writer()
     obj.serialize(rnw.writer)
     let another_obj = MySeqObj.deserialize(rnw.reader)
-    check(another_obj.a.len == obj.a.len)
+    require(another_obj.a.len == obj.a.len)
     check(equalMem(another_obj.a[0].unsafeAddr, obj.a[0].unsafeAddr,
           obj.a.len))
 
+  test "Sequence of sequences":
+    serializable:
+      type
+        MyObj = object
+          a: seq[seq[int32]]
+    var obj: MyObj
+    obj.a = newSeq[seq[int32]](1+random(10))
+    for i in 0..<obj.a.len:
+      obj.a[i] = newSeq[int32](1+random(10))
+      for j in 0..<obj.a[i].len:
+        obj.a[i][j] = random(100).int32
+    let rnw = get_reader_n_writer()
+    obj.serialize(rnw.writer)
+    let another_obj = MyObj.deserialize(rnw.reader)
+    require(obj.a.len == another_obj.a.len)
+    for i in 0..<obj.a.len:
+      require(obj.a[i].len == another_obj.a[i].len)
+      check(equalMem(obj.a[i][0].unsafeAddr,
+            another_obj.a[i][0].unsafeAddr, obj.a[i].len))
