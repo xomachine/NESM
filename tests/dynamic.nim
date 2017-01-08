@@ -76,6 +76,7 @@ suite "Dynamic structure tests":
       require(obj.a[i].len == another_obj.a[i].len)
       check(equalMem(obj.a[i][0].unsafeAddr,
             another_obj.a[i][0].unsafeAddr, obj.a[i].len))
+
   test "String":
     serializable:
       type
@@ -86,8 +87,9 @@ suite "Dynamic structure tests":
     var o: MyObj
     o.a = random(1000).int32
     o.c = random(1000).int32
-    var random_str = newSeqWith(random(1..100),
-                                char(random(ord('A')..ord('Z'))))
+    let strlen = random(1..100)
+    var random_str = newSeqWith(strlen,
+                                chr(random(ord('A')..ord('Z'))))
     o.b = cast[string](random_str)
     let rnw = get_reader_n_writer()
     o.serialize(rnw.writer)
@@ -96,3 +98,41 @@ suite "Dynamic structure tests":
     require(o.b.len == ao.b.len)
     check(o.c == ao.c)
     check(equalMem(o.b[0].unsafeAddr, ao.b[0].unsafeAddr, o.b.len))
+
+  test "Some strings":
+    serializable:
+      type
+        TwoStrings = object
+          a: string
+          b: string
+
+    var o: TwoStrings
+    let strlen = random(1..100)
+    var random_str = newSeqWith(strlen,
+                                chr(random(ord('A')..ord('Z'))))
+    o.a = cast[string](random_str)
+    let strlen_2 = random(1..100)
+    random_str = newSeqWith(strlen_2,
+                            chr(random(ord('A')..ord('Z'))))
+    o.b = cast[string](random_str)
+    let rnw = get_reader_n_writer()
+    o.serialize(rnw.writer)
+    let ao = TwoStrings.deserialize(rnw.reader)
+    require(o.a.len == ao.a.len)
+    check(o.a == ao.a)
+    require(o.b.len == ao.b.len)
+    check(o.b == ao.b)
+
+  test "Empty sequence":
+    serializable:
+      type
+        MyObj = object
+          a: seq[int32]
+    var o: MyObj
+    o.a = @[]
+    let rnw = get_reader_n_writer()
+    o.serialize(rnw.writer)
+    let ao = MyObj.deserialize(rnw.reader)
+    require(ao.a.len == o.a.len)
+    require(ao.a.len == 0)
+    check(ao.a == o.a)
