@@ -185,7 +185,7 @@ proc genPeriodic(declared: Table[string, TypeChunk], elem: NimNode,
     elif elemString.len > 0:
       0
     else:
-      ord('s')
+      ord('s') - ord('@')
   let if_string =
     if elemString.len == 0:
       "tring_counter"
