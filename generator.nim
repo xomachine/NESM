@@ -224,6 +224,7 @@ proc genPeriodic(declared: Table[string, TypeChunk], elem: NimNode,
     let forloop = newTree(nnkForStmt, newIdentNode(indexletter),
       rangeexpr, newTree(nnkStmtList, chunk_expr))
     result.add(forloop)
+    result = @[newBlockStmt(newStmtList(result))]
   result.deserialize = proc(source: string): seq[NimNode] =
     let periodic_len = length(source)
     result = newSeq[NimNode]()
@@ -253,3 +254,4 @@ proc genPeriodic(declared: Table[string, TypeChunk], elem: NimNode,
     let forloop = newTree(nnkForStmt, newIdentNode(indexletter),
       rangeexpr, newTree(nnkStmtList, chunk_expr))
     result.add(forloop)
+    result = @[newBlockStmt(newStmtList(result))]
