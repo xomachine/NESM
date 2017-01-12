@@ -217,21 +217,24 @@ result = deserialize(type(result), obtain)
     "): $2 = discard"
 const STATIC_SIZE_DECLARATION =
   """proc size$1(thetype: typedesc[$2]): int = discard"""
-const SIZE_DECLARATION = "proc size$1(" & SERIALIZER_INPUT_NAME &
+const SIZE_DECLARATION = "proc size$1(" &
+                         SERIALIZER_INPUT_NAME &
                          ": $2): int = discard"
 
 static:
   var declared = initTable[string, TypeChunk]()
 when not defined(nimdoc):
-  proc generateProc(pattern: string, name: string, sign: string,
-                body: seq[NimNode] = @[]): NimNode =
+  proc generateProc(pattern: string, name: string,
+                    sign: string,
+                    body: seq[NimNode] = @[]): NimNode =
     result = parseExpr(pattern % [sign, name])
     if len(body) > 0:
       result.body = newStmtList(body)
 
 proc generateProcs(declared: var Table[string, TypeChunk],
-                 obj: NimNode,
-                 is_static: bool = false): NimNode {.compileTime.} =
+                   obj: NimNode,
+                   is_static: bool = false): NimNode
+                   {.compileTime.} =
   when not defined(nimdoc):
     expectKind(obj, nnkTypeDef)
     expectMinLen(obj, 3)
@@ -280,11 +283,13 @@ proc generateProcs(declared: var Table[string, TypeChunk],
 
 proc prepare(declared: var Table[string, TypeChunk],
              statements: NimNode,
-             is_static: bool = false): NimNode {.compileTime.} =
+             is_static: bool = false): NimNode
+             {.compileTime.} =
   result = newStmtList()
   case statements.kind
   of nnkStmtList, nnkTypeSection, nnkStaticStmt:
-    let not_dynamic = statements.kind == nnkStaticStmt or is_static
+    let not_dynamic = ((statements.kind == nnkStaticStmt) or
+                       is_static)
     for child in statements.children():
       result.add(declared.prepare(child, not_dynamic))
   of nnkTypeDef:
