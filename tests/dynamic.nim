@@ -1,37 +1,8 @@
 
 import unittest
 import nesm
-import random
+import helpers.rnw
 from sequtils import newSeqWith
-type
-  RnW = object
-    reader: proc (c: Natural): seq[byte]
-    writer: proc (s: pointer, c: Natural)
-
-
-proc get_random_reader_n_writer(): RnW =
-  var read_data = newSeq[byte]()
-  var index = 0
-  result.reader = proc(c:Natural): seq[byte] =
-    result = newSeqWith(c, byte(random(ord('A')..ord('Z'))))
-    read_data &= result
-
-  result.writer = proc(s:pointer, c:Natural) =
-    assert(equalMem(s, read_data[index].unsafeAddr, c),
-           "Written memory not equals to read one")
-    index += c
-
-proc get_reader_n_writer(): RnW =
-  var written_data = newSeq[byte]()
-  var index = 0
-  result.reader = proc(c:Natural): seq[byte] =
-    result = written_data[index..<(index+c)]
-    index += c
-
-  result.writer = proc(s:pointer, c:Natural) =
-    var data = newSeq[byte](c)
-    copyMem(data[0].addr, s, c)
-    written_data &= data
 
 suite "Dynamic structure tests":
   test "Static object in dynamic context":
@@ -49,13 +20,13 @@ suite "Dynamic structure tests":
         MySeqObj = object
           a: seq[int32]
     var obj: MySeqObj
-    obj.a = newSeqWith(random(1..50), int32(random(100)))
+    obj.a = random_seq_with(int32(random(100)))
     let rnw = get_reader_n_writer()
     obj.serialize(rnw.writer)
     let another_obj = MySeqObj.deserialize(rnw.reader)
     require(another_obj.a.len == obj.a.len)
-    check(equalMem(another_obj.a[0].unsafeAddr, obj.a[0].unsafeAddr,
-          obj.a.len))
+    check(equalMem(another_obj.a[0].unsafeAddr,
+                   obj.a[0].unsafeAddr, obj.a.len))
 
   test "Sequence of sequences":
     serializable:
@@ -63,11 +34,8 @@ suite "Dynamic structure tests":
         MyObj = object
           a: seq[seq[int32]]
     var obj: MyObj
-    obj.a = newSeq[seq[int32]](random(1..11))
-    for i in 0..<obj.a.len:
-      obj.a[i] = newSeq[int32](random(1..11))
-      for j in 0..<obj.a[i].len:
-        obj.a[i][j] = random(100).int32
+    obj.a = random_seq_with(
+              random_seq_with(int32(random(100))))
     let rnw = get_reader_n_writer()
     obj.serialize(rnw.writer)
     let another_obj = MyObj.deserialize(rnw.reader)
@@ -87,10 +55,7 @@ suite "Dynamic structure tests":
     var o: MyObj
     o.a = random(1000).int32
     o.c = random(1000).int32
-    let strlen = random(1..100)
-    var random_str = newSeqWith(strlen,
-                                chr(random(ord('A')..ord('Z'))))
-    o.b = cast[string](random_str)
+    o.b = get_random_string()
     let rnw = get_reader_n_writer()
     o.serialize(rnw.writer)
     let ao = MyObj.deserialize(rnw.reader)
@@ -107,14 +72,8 @@ suite "Dynamic structure tests":
           b: string
 
     var o: TwoStrings
-    let strlen = random(1..100)
-    var random_str = newSeqWith(strlen,
-                                chr(random(ord('A')..ord('Z'))))
-    o.a = cast[string](random_str)
-    let strlen_2 = random(1..100)
-    random_str = newSeqWith(strlen_2,
-                            chr(random(ord('A')..ord('Z'))))
-    o.b = cast[string](random_str)
+    o.a = get_random_string()
+    o.b = get_random_string()
     let rnw = get_reader_n_writer()
     o.serialize(rnw.writer)
     let ao = TwoStrings.deserialize(rnw.reader)

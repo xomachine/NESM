@@ -1,7 +1,7 @@
 
 import unittest
 import nesm
-
+import helpers.rnw
 
 suite "Complex tests":
   test "Simple object":
@@ -12,10 +12,10 @@ suite "Complex tests":
             a: bool
             b: array[0..5, int16]
 
-    let mo = MyObj()
-    let smo = mo.serialize()
-    let dsmo = MyObj.deserialize(@smo)
-    require(mo.repr == dsmo.repr)
+    let random_rnw = get_random_reader_n_writer()
+    let dsmo = MyObj.deserialize(random_rnw.reader)
+    dsmo.serialize(random_rnw.writer)
+    check(true)
 
   test "Nested array object":
     serializable:
@@ -25,10 +25,10 @@ suite "Complex tests":
             a: bool
             b: array[0..5, array[0..5, int16]]
 
-    let mo = MyObj()
-    let smo = mo.serialize()
-    let dsmo = MyObj.deserialize(@smo)
-    require(mo.repr == dsmo.repr)
+    let random_rnw = get_random_reader_n_writer()
+    let dsmo = MyObj.deserialize(random_rnw.reader)
+    dsmo.serialize(random_rnw.writer)
+    check(true)
   
   test "Nested object":
     serializable:
@@ -41,10 +41,10 @@ suite "Complex tests":
             a: bool
             b: MyNestedObj
 
-    let mo = MyObj()
-    let smo = mo.serialize()
-    let dsmo = MyObj.deserialize(@smo)
-    require(mo.repr == dsmo.repr)
+    let random_rnw = get_random_reader_n_writer()
+    let dsmo = MyNestedObj.deserialize(random_rnw.reader)
+    dsmo.serialize(random_rnw.writer)
+    check(true)
 
   test "Array of tuples":
     serializable:
@@ -54,7 +54,7 @@ suite "Complex tests":
             a: array[0..7, tuple[a: int32, b: array[5,char]]]
             b: char
 
-    let mo = MyObj()
-    let smo = mo.serialize()
-    let dsmo = MyObj.deserialize(@smo)
-    require(mo.repr == dsmo.repr)
+    let random_rnw = get_random_reader_n_writer()
+    let dsmo = MyObj.deserialize(random_rnw.reader)
+    dsmo.serialize(random_rnw.writer)
+    check(true)
