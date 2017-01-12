@@ -53,6 +53,11 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         result = newSeq[NimNode]()
         result.add(makeNimNode(DESERIALIZE_PATTERN, source, size.repr))
     elif plaintype in declared:
+      let declared_type = declared[plaintype]
+      if declared_type.dynamic and is_static:
+        error("Only static objects can be nested into" &
+              " static objects, but '" & plaintype &
+              "' is not a static object!")
       return declared[plaintype]
     elif thetype.repr == "string" and not is_static:
       let len_proc = proc (s: string):NimNode =
@@ -61,13 +66,14 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
                                     is_static)
     else:
       if plaintype in ["float", "int", "uint"]:
-        error(("The type $1 is not allowed due to ambiguity. Consider using $1" %
-              plaintype) & "32.")
+        error((("The type $1 is not allowed due to" &
+                " ambiguity. Consider using $1") %
+               plaintype) & "32.")
       error(("Type $1 is not a basic " % plaintype) &
-            "type nor a complex type under 'serializable' block!")
+            "type nor a complex type under 'serializable'" &
+            " block!")
   of nnkBracketExpr:
-    # The template type. typename[someargs]. Only array supported
-    # for now.
+    # The template type. typename[someargs].
     expectMinLen(thetype, 2)
     let name = $thetype[0]
     case name

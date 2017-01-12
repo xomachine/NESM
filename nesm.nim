@@ -220,6 +220,8 @@ const STATIC_SIZE_DECLARATION =
 const SIZE_DECLARATION = "proc size$1(" & SERIALIZER_INPUT_NAME &
                          ": $2): int = discard"
 
+static:
+  var declared = initTable[string, TypeChunk]()
 when not defined(nimdoc):
   proc generateProc(pattern: string, name: string, sign: string,
                 body: seq[NimNode] = @[]): NimNode =
@@ -299,7 +301,6 @@ macro serializable*(typedecl: untyped): untyped =
   ##   serializable:
   ##     # Type declaration
   ##
-  var declared = initTable[string, TypeChunk]()
   result = newStmtList(toSeq(typedecl.children))
   when defined(debug):
     hint(typedecl.treeRepr)

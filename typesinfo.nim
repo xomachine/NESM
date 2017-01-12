@@ -11,6 +11,7 @@ type
     size*: proc(source: string): NimNode
     serialize*: proc(source: string): seq[NimNode]
     deserialize*: proc(source: string): seq[NimNode]
+    dynamic*: bool
 
 proc isBasic*(thetype: string): bool =
   thetype in basic_types
