@@ -66,6 +66,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
               "' is not a static object!")
       if declared_type.has_hidden:
         warning("Seems like the " & plaintype &
+          " (at " & thetype.lineinfo() & ")" &
           " have hidden fields inside. This may lead to" &
           " compile error if the " & plaintype & " was " &
           "imported from another module. Consider including" &
