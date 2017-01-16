@@ -12,6 +12,7 @@ type
     serialize*: proc(source: string): seq[NimNode]
     deserialize*: proc(source: string): seq[NimNode]
     dynamic*: bool
+    has_hidden*: bool
 
 proc isBasic*(thetype: string): bool =
   thetype in basic_types

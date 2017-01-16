@@ -39,6 +39,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
                    thetype: NimNode,
                    is_static: bool = false): TypeChunk
                    {.compileTime.} =
+  result.has_hidden = false
   case thetype.kind
   of nnkIdent:
     # It's a type, declared as identifier. Might be a basic
@@ -63,6 +64,13 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         error("Only static objects can be nested into" &
               " static objects, but '" & plaintype &
               "' is not a static object!")
+      if declared_type.has_hidden:
+        warning("Seems like the " & plaintype &
+          " have hidden fields inside. This may lead to" &
+          " compile error if the " & plaintype & " was " &
+          "imported from another module. Consider including" &
+          " imported module or sharing " & plaintype & "'s" &
+          " fields via '*' postfix")
       return declared[plaintype]
     elif thetype.repr == "string" and not is_static:
       let len_proc = proc (s: string):NimNode =
@@ -112,6 +120,8 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
     for decl in thetype.children():
       expectKind(decl, nnkIdentDefs)
       expectMinLen(decl, 2)
+      if decl[0].kind != nnkPostfix:
+        result.has_hidden = true
       let name = $decl[0].basename
       let subtype = decl[1]
       let elem = declared.genTypeChunk(subtype, is_static)
@@ -153,6 +163,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
     expectMinLen(thetype, 1)
     let objectchunk = declared.genTypeChunk(thetype[0],
                                             is_static)
+    result.has_hidden = objectchunk.has_hidden
     result.size = objectchunk.size
     result.serialize = objectchunk.serialize
     result.deserialize = proc(source: string): seq[NimNode] =
@@ -164,6 +175,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
     let basetype = thetype[0]
     let distincted = declared.genTypeChunk(basetype,
                                            is_static)
+    result.has_hidden = true
     result.size = distincted.size
     result.serialize = proc(source: string): seq[NimNode] =
       result = newSeq[NimNode]()
