@@ -95,3 +95,27 @@ suite "Dynamic structure tests":
     require(ao.a.len == o.a.len)
     require(ao.a.len == 0)
     check(ao.a == o.a)
+
+  test "Order preservation":
+    serializable:
+      type
+        MyPreserved = object
+          n: string
+          q: uint16
+          w: uint8
+
+    let oo = MyPreserved(n: "Hi!", q: 7'u16, w: 16'u8)
+    let so = oo.serialize()
+    let thedata = ['\x03', '\x00', '\x00', '\x00', 'H', 'i',
+                   '!', '\x07', '\x00', '\x10']
+    require(so.len == thedata.len)
+    require(cast[seq[char]](so) == @thedata)
+    var index = 0
+    let reader = proc (c: Natural): seq[char] =
+      result = thedata[index..<index+c]
+      index += c
+    let o = MyPreserved.deserialize(reader)
+    require(o.n.len == 3)
+    check(o.n == "Hi!")
+    check(o.q == 7'u16)
+    check(o.w == 16'u8)
