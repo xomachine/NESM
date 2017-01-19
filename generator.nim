@@ -117,7 +117,9 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
     else:
       error("Type $1 is not supported!" % name)
   of nnkTupleTy, nnkRecList:
-    var elems = initTable[string, TypeChunk]()
+    var elems =
+      newSeq[tuple[key:string, val:TypeChunk]](thetype.len())
+    var index = 0
     for decl in thetype.children():
       expectKind(decl, nnkIdentDefs)
       expectMinLen(decl, 2)
@@ -127,12 +129,14 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
       let name = $decl[0].basename
       let subtype = decl[1]
       let elem = declared.genTypeChunk(subtype, is_static)
-      elems[name] = elem
+      elems[index] = (name, elem)
+      index += 1
     result.size = proc (source: string): NimNode =
-      let result_node = newIdentNode("result")
       result = newIntLitNode(0)
       var result_list = newSeq[NimNode]()
-      for n, e in elems.pairs():
+      for i in elems.items():
+        let n = i.key
+        let e = i.val
         let part_size = e.size("$1.$2" % [source, n])
         if is_static and part_size.kind != nnkStmtList:
           result = result.infix("+", part_size)
@@ -145,7 +149,9 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         result = newTree(nnkPar, result)
     result.serialize = proc(source: string): seq[NimNode] =
       result = newSeq[NimNode]()
-      for n, e in elems.pairs():
+      for i in elems.items():
+        let n = i.key
+        let e = i.val
         result &= e.serialize("$1.$2" % [source, n])
     result.deserialize = proc(source: string): seq[NimNode] =
       result = newSeq[NimNode]()
@@ -154,7 +160,9 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
           source & ".$1"
         else:
           "$1"
-      for n, e in elems.pairs():
+      for i in elems.items():
+        let n = i.key
+        let e = i.val
         result &= e.deserialize(pat % n)
   of nnkObjectTy:
     expectMinLen(thetype, 3)
