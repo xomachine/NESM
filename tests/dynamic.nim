@@ -119,3 +119,26 @@ suite "Dynamic structure tests":
     check(o.n == "Hi!")
     check(o.q == 7'u16)
     check(o.w == 16'u8)
+
+  test "Cased structure":
+    serializable:
+      type
+        Variant = object
+          k: int32
+          case x: uint8
+          of 0..(high(int8)-50).uint8:
+            y: uint32
+          else:
+            z: uint16
+    var locase = false
+    var hicase = false
+    while not (locase and hicase):
+      let rnw = get_random_reader_n_writer()
+      let o = Variant.deserialize(rnw.reader)
+      if o.x in 0'u8..(high(int8)-50).uint8:
+        check(o.size() == 9)
+        locase = true
+      else:
+        check(o.size() == 7)
+        hicase = true
+      o.serialize(rnw.writer)
