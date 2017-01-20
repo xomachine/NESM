@@ -91,8 +91,7 @@
 ##     .. code-block:: nim
 ##       type MyTuple = tuple[a: float64, b: int64]
 ##
-## - Nested objects if they are previously defined
-##   in the same `serializable` block:
+## - Nested objects defined in *serializable* block:
 ##     .. code-block:: nim
 ##       type MyNestedObject = object
 ##         a: float64
@@ -109,6 +108,21 @@
 ##     .. code-block:: nim
 ##       type MySeq = object
 ##         data: seq[string]
+##
+## - Object variants with nested case statements:
+##     .. code-block:: nim
+##       type Variant = object
+##         case has_sign: bool
+##         of true:
+##           a: int32
+##         else:
+##           case bits: uint8
+##           of 32:
+##             b: uint32
+##           of 16:
+##             c: uint16
+##           else:
+##             d: seq[uint8]
 ##
 ## Static types
 ## ------------
@@ -159,6 +173,19 @@
 ##         index = lastindex
 ##       result = deserialize(type(result), obtain)
 ##
+##  Future ideas
+## -------------
+## The following will not necessarily be done but may be
+## realized on demand
+## * implement cstring type
+##   (null terminated serialized dynamic string)
+## * the data aligning support
+##   (useful for reading custom data, not created by
+##   this macro. can be partially done at client side
+##   via modification of writer/obtainer)
+## * implement some dynamic dictonary type
+##   (not required actually because it can be
+##   easily implemented on client side)
 ##
 
 when defined(js):
