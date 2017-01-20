@@ -3,7 +3,7 @@ from typesinfo import isBasic, estimateBasicSize
 from typesinfo import TypeChunk
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from strutils import `%`
-from sequtils import mapIt, foldl
+from sequtils import mapIt, foldl, toSeq, filterIt
 
 const DESERIALIZER_DATA_NAME* = "data"
 const DESERIALIZER_RECEIVER_NAME* = "obtain"
@@ -44,6 +44,7 @@ proc caseWorkaround(tc: TypeChunk,
       @[parseExpr("$1 = $2" % [s, tmpvar])]
     @[newBlockStmt(newStmtList(list))]
   t
+
 proc makeNimNode(pattern: string, target: string,
                  size: string): NimNode {.compileTime.} =
   let list = parseStmt(pattern % [target, size])
@@ -155,14 +156,14 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         result.has_hidden = true
       let name = $decl[0].basename
       let subtype = decl[1]
+      let tc = declared.genTypeChunk(subtype, is_static)
       let elem =
         if declaration.kind == nnkRecCase:
           # A bad hackery to avoid expression without address
           # problem when accessing to field under case.
-          declared.genTypeChunk(subtype, is_static)
-            .caseWorkaround(subtype.repr)
+          tc.caseWorkaround(subtype.repr)
         else:
-          declared.genTypeChunk(subtype, is_static)
+          tc
       elems[index] = (name, elem)
       index += 1
       if declaration.kind == nnkRecCase:
@@ -352,35 +353,27 @@ proc genPeriodic(declared: Table[string, TypeChunk],
 
 proc genCase(declared: Table[string, TypeChunk],
              decl: NimNode): TypeChunk =
-  var serializes = newSeq[proc(s:string):seq[NimNode]]()
-  var deserializes = newSeq[proc(s:string):seq[NimNode]]()
-  var sizes = newSeq[proc(s:string):NimNode]()
-  var checkable: string
-  for pcase in decl.children():
-    case pcase.kind
-    of nnkOfBranch, nnkElse:
-      var conditions = newSeq[NimNode](pcase.len - 1)
-      for i in 0..<(pcase.len - 1):
-        conditions[i] = pcase[i]
-      let branch = declared.genTypeChunk(pcase.last, false)
-      let size = proc(source: string):NimNode =
-        let casebody = branch.size(source)
-        newTree(pcase.kind, conditions & @[casebody])
-      result.has_hidden = branch.has_hidden or
-                          result.has_hidden
-      let serialize = proc(source: string):seq[NimNode] =
-        let casebody = newStmtList(branch.serialize(source))
-        @[newTree(pcase.kind, conditions & @[casebody])]
-      let deserialize = proc(source: string):seq[NimNode] =
-        let casebody = newStmtList(branch.deserialize(source))
-        @[newTree(pcase.kind, conditions & @[casebody])]
-      serializes.add(serialize)
-      deserializes.add(deserialize)
-      sizes.add(size)
-    of nnkIdentDefs:
-      checkable = $pcase[0].basename
-    else:
-      error("Unexpected AST!")
+  let checkable = $decl[0][0].basename
+  let eachbranch = proc(b: NimNode): auto =
+    let conditions = toSeq(b.children)
+      .filterIt(it.kind != nnkRecList)
+    let branch = declared.genTypeChunk(b.last, false)
+    let size = proc(source: string):NimNode =
+      let casebody = branch.size(source)
+      newTree(b.kind, conditions & @[casebody])
+    let serialize = proc(source: string):seq[NimNode] =
+      let casebody = newStmtList(branch.serialize(source))
+      @[newTree(b.kind, conditions & @[casebody])]
+    let deserialize = proc(source: string):seq[NimNode] =
+      let casebody = newStmtList(branch.deserialize(source))
+      @[newTree(b.kind, conditions & @[casebody])]
+    (size, serialize, deserialize)
+  let branches = toSeq(decl.children())
+    .filterIt(it.kind in [nnkElse, nnkOfBranch])
+    .mapIt(eachbranch(it))
+  let sizes = branches.mapIt(it[0])
+  let serializes = branches.mapIt(it[1])
+  let deserializes = branches.mapIt(it[2])
   result.dynamic = true
   let condition = proc (source: string): NimNode =
     parseExpr("$1.$2" % [source, checkable])
