@@ -1209,6 +1209,7 @@ function main() {
   </div>
   <ul class="simple simple-toc" id="toc-list">
 <li><a class="reference" id="static-types_toc" href="#static-types">Static types</a></li>
+<li><a class="reference" id="future-ideas_toc" href="#future-ideas">Future ideas</a></li>
 <li>
   <a class="reference reference-toplevel" href="#6" id="56">Imports</a>
   <ul class="simple simple-toc-section">
@@ -1323,7 +1324,7 @@ function main() {
 </dl>
 </li>
 </ul>
-<ul class="simple"><li>Nested objects if they are previously defined<dl class="docutils"><dt>in the same <cite>serializable</cite> block:</dt>
+<ul class="simple"><li><dl class="docutils"><dt>Nested objects defined in <em>serializable</em> block:</dt>
 <dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">MyNestedObject</span> <span class="Operator">=</span> <span class="Keyword">object</span>
   <span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">float64</span>
   <span class="Identifier">b</span><span class="Punctuation">:</span> <span class="Identifier">int64</span>
@@ -1341,6 +1342,22 @@ function main() {
 <ul class="simple"><li><dl class="docutils"><dt>Sequencies and strings:</dt>
 <dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">MySeq</span> <span class="Operator">=</span> <span class="Keyword">object</span>
   <span class="Identifier">data</span><span class="Punctuation">:</span> <span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">string</span><span class="Punctuation">]</span></pre></dd>
+</dl>
+</li>
+</ul>
+<ul class="simple"><li><dl class="docutils"><dt>Object variants with nested case statements:</dt>
+<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">Variant</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+  <span class="Keyword">case</span> <span class="Identifier">has_sign</span><span class="Punctuation">:</span> <span class="Identifier">bool</span>
+  <span class="Keyword">of</span> <span class="Identifier">true</span><span class="Punctuation">:</span>
+    <span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">int32</span>
+  <span class="Keyword">else</span><span class="Punctuation">:</span>
+    <span class="Keyword">case</span> <span class="Identifier">bits</span><span class="Punctuation">:</span> <span class="Identifier">uint8</span>
+    <span class="Keyword">of</span> <span class="DecNumber">32</span><span class="Punctuation">:</span>
+      <span class="Identifier">b</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span>
+    <span class="Keyword">of</span> <span class="DecNumber">16</span><span class="Punctuation">:</span>
+      <span class="Identifier">c</span><span class="Punctuation">:</span> <span class="Identifier">uint16</span>
+    <span class="Keyword">else</span><span class="Punctuation">:</span>
+      <span class="Identifier">d</span><span class="Punctuation">:</span> <span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">uint8</span><span class="Punctuation">]</span></pre></dd>
 </dl>
 </li>
 </ul>
@@ -1371,7 +1388,14 @@ function main() {
       <span class="Keyword">let</span> <span class="Identifier">lastindex</span> <span class="Operator">=</span> <span class="Keyword">if</span> <span class="Identifier">index</span> <span class="Operator">+</span> <span class="Identifier">count</span> <span class="Operator">&lt;</span> <span class="Identifier">datalen</span><span class="Punctuation">:</span> <span class="Identifier">index</span> <span class="Operator">+</span> <span class="Identifier">count</span> <span class="Keyword">else</span><span class="Punctuation">:</span> <span class="Identifier">datalen</span>
       <span class="Identifier">result</span> <span class="Operator">=</span> <span class="Keyword">cast</span><span class="Punctuation">[</span><span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">byte</span><span class="Punctuation">]</span><span class="Punctuation">]</span><span class="Punctuation">(</span><span class="Identifier">data</span><span class="Punctuation">[</span><span class="Identifier">index</span> <span class="Operator">..&lt;</span> <span class="Identifier">lastindex</span><span class="Punctuation">]</span><span class="Punctuation">)</span>
       <span class="Identifier">index</span> <span class="Operator">=</span> <span class="Identifier">lastindex</span>
-    <span class="Identifier">result</span> <span class="Operator">=</span> <span class="Identifier">deserialize</span><span class="Punctuation">(</span><span class="Keyword">type</span><span class="Punctuation">(</span><span class="Identifier">result</span><span class="Punctuation">)</span><span class="Punctuation">,</span> <span class="Identifier">obtain</span><span class="Punctuation">)</span></pre></p>
+    <span class="Identifier">result</span> <span class="Operator">=</span> <span class="Identifier">deserialize</span><span class="Punctuation">(</span><span class="Keyword">type</span><span class="Punctuation">(</span><span class="Identifier">result</span><span class="Punctuation">)</span><span class="Punctuation">,</span> <span class="Identifier">obtain</span><span class="Punctuation">)</span></pre><blockquote><p>
+<h1><a class="toc-backref" id="future-ideas" href="#future-ideas">Future ideas</a></h1></p></blockquote>
+<p>The following will not necessarily be done but may be realized on demand</p>
+<ul class="simple"><li>implement cstring type (null terminated serialized dynamic string)</li>
+<li>the data aligning support (useful for reading custom data, not created by this macro. can be partially done at client side via modification of writer/obtainer)</li>
+<li>implement some dynamic dictonary type (not required actually because it can be easily implemented on client side)</li>
+</ul>
+</p>
   <div class="section" id="6">
 <h1><a class="toc-backref" href="#6">Imports</a></h1>
 <dl class="item">
@@ -1385,9 +1409,9 @@ function main() {
 <dd>
 This type will be used as example to show which procedures will be generated by the <strong>serializable</strong> macro.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L311"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L344"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L311" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L344" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 
@@ -1399,36 +1423,36 @@ class="link-seesrc" target="_blank">Source</a>
 <dd>
 Returns the size of serialized type. The type should be placed under the <strong>static</strong> section inside the <strong>serializable</strong> macro to access this procedure. The procedure could be used at compile time.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L314"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L347"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L314" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L347" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="size"><a name="size,TheType"></a><pre><span class="Keyword">proc</span> <span class="Identifier">size</span><span class="Other">(</span><span class="Identifier">q</span><span class="Other">:</span> <span class="Identifier">TheType</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other pragmabegin">{.</span><div class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Returns the size of serialized type. Available for types which declarations is not placed under the <strong>static</strong> section.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L322"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L355"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L322" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L355" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="serialize"><a name="serialize,TheType,proc(pointer,Natural)"></a><pre><span class="Keyword">proc</span> <span class="Identifier">serialize</span><span class="Other">(</span><span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">TheType</span><span class="Other">;</span> <span class="Identifier">writer</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">a</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span> <span class="Identifier">s</span><span class="Other">:</span> <span class="Identifier">Natural</span><span class="Other">)</span><span class="Other">)</span> <span class="Other pragmabegin">{.</span><div class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Serializes <cite>TheType</cite> and writes result using given <cite>writer</cite> procedure. The <cite>writer</cite> procedure should receive two arguments: a pointer with data to be written and the size of data to be written. The macro garantees that in memory between pointer and (pointer+size) will be placed readable data. Trying to read any other data around or attempts to write data at this location may lead to segmentation fault.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L328"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L361"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L328" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L361" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="serialize"><a name="serialize,TheType"></a><pre><span class="Keyword">proc</span> <span class="Identifier">serialize</span><span class="Other">(</span><span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">TheType</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">byte</span><span class="Other">]</span> <span class="Other pragmabegin">{.</span><div class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Serializes <cite>TheType</cite> to seq of bytes. More detailed description can be found in top level documentation.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L341"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L374"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L341" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L374" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="deserialize"><a name="deserialize,typedesc[TheType],proc(Natural)"></a><pre><span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Other">[</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">q</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">obtain</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">count</span><span class="Other">:</span> <span class="Identifier">Natural</span><span class="Other">)</span><span class="Other">:</span> <span class="Other">(</span>
@@ -1436,9 +1460,9 @@ class="link-seesrc" target="_blank">Source</a>
 <dd>
 Interprets the data received by calling the <cite>obtain</cite> procedure as <cite>TheType</cite> and deserializes it then. The <cite>obtain</cite> procedure should receive one argument: the count of bytes to be deserialized and return the sequence or string with given length. When the <cite>obtain</cite> procedure will return anything other than expected, an <cite>AssertionError</cite> will be raised.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L347"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L380"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L347" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L380" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="deserialize"><a name="deserialize,typedesc[TheType],"></a><pre><span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Other">[</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">q</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">;</span>
@@ -1447,9 +1471,9 @@ class="link-seesrc" target="_blank">Source</a>
 <dd>
 Interprets given data as serialized <cite>TheType</cite> and deserializes it then. Only available for types which declarations are placed under the <strong>static</strong> section. When the <cite>data</cite> size is lesser than <cite>TheType.size</cite>, the AssertionError will be raised.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L359"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L392"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L359" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L392" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 
@@ -1464,9 +1488,9 @@ class="link-seesrc" target="_blank">Source</a>
 <pre class = "listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
   <span class="Comment"># Type declaration</span></pre>
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L293"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L327"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L293" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L327" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 
@@ -1479,7 +1503,7 @@ class="link-seesrc" target="_blank">Source</a>
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small>Made with Nim. Generated: 2016-12-24 23:58:32 UTC</small>
+        <small>Made with Nim. Generated: 2017-01-20 21:32:11 UTC</small>
       </div>
     </div>
   </div>
