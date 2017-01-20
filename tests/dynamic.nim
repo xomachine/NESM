@@ -142,3 +142,34 @@ suite "Dynamic structure tests":
         check(o.size() == 7)
         hicase = true
       o.serialize(rnw.writer)
+
+  test "Nested variants":
+    serializable:
+      type
+        NestedVar = object
+          case x: char
+          of 'Q'..'X', 'C'..'N':
+            case y: char
+            of 'A'..'K':
+              i: int8
+            else:
+              j: int16
+          else:
+            k: int32
+    let rnw = get_random_reader_n_writer()
+    var tests: int8 = 0
+    while tests < 7:
+      let o = NestedVar.deserialize(rnw.reader)
+      case o.x
+      of 'Q'..'X', 'C'..'N':
+        case o.y
+        of 'A'..'K':
+          tests = tests or 2
+          check(o.size() == 3)
+        else:
+          tests = tests or 4
+          check(o.size() == 4)
+      else:
+        tests = tests or 1
+        check(o.size() == 5)
+      o.serialize(rnw.writer)
