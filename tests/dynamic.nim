@@ -173,3 +173,19 @@ suite "Dynamic structure tests":
         tests = tests or 1
         check(o.size() == 5)
       o.serialize(rnw.writer)
+
+  test "Null-terminated string":
+    serializable:
+      type
+        NTS = object
+          u: int8
+          s: cstring
+          d: int8
+    let rnw = get_reader_n_writer()
+    let o = NTS(u: 10'i8, s: "hello!", d: 6'i8)
+    o.serialize(rnw.writer)
+    let d = NTS.deserialize(rnw.reader)
+    check(d.u == o.u)
+    check(d.d == o.d)
+    check(d.s == o.s)
+    check(o.size() == 9)
