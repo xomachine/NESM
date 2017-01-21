@@ -18,6 +18,12 @@ copyMem($1.unsafeAddr, thedata[0].unsafeAddr, $2)
 const SERIALIZE_PATTERN = """
 writer($1.unsafeAddr, $2)
 """
+const CSTRING_DESERIALIZER_PATTERN = """
+var str = $1(1)
+while str[^1] != byte(0):
+  str &= $1(1)
+$2 = cast[cstring](str[0].addr)
+""" % [DESERIALIZER_RECEIVER_NAME, "$1"]
 
 proc genPeriodic(declared: Table[string, TypeChunk],
                  elem: NimNode,
@@ -100,6 +106,15 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         parseExpr("len($1)" % s)
       result = declared.genPeriodic(newEmptyNode(), len_proc,
                                     is_static)
+    elif thetype.repr == "cstring" and not is_static:
+      let lenpattern = "len($1) + 1"
+      result.serialize = proc (s: string): seq[NimNode] =
+        let pattern = "writer($1, " & ("$1)" % lenpattern)
+        @[parseExpr(pattern % [s])]
+      result.deserialize = proc (s: string): seq[NimNode] =
+        @[makeNimNode(CSTRING_DESERIALIZER_PATTERN, s, "")]
+      result.size = proc (s: string): NimNode =
+        parseExpr(lenpattern % s)
     else:
       if plaintype in ["float", "int", "uint"]:
         error((("The type $1 is not allowed due to" &
