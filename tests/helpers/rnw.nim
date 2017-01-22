@@ -6,6 +6,7 @@ export random
 
 type
   RnW* = object
+    buffer*: ptr seq[byte]
     reader*: proc (c: Natural): seq[byte]
     writer*: proc (s: pointer, c: Natural)
 
@@ -23,6 +24,7 @@ proc get_random_reader_n_writer*(): RnW =
     assert(equalMem(s, read_data[index].unsafeAddr, c),
            "Written memory not equals to read one")
     index += c
+  result.buffer = read_data.addr
 
 proc get_reader_n_writer*(): RnW =
   var written_data = newSeq[byte]()
@@ -35,6 +37,7 @@ proc get_reader_n_writer*(): RnW =
     var data = newSeq[byte](c)
     copyMem(data[0].addr, s, c)
     written_data &= data
+  result.buffer = written_data.addr
 
 template random_seq_with*(elem: untyped): untyped =
   let size = random(1..100)
