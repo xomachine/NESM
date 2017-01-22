@@ -269,102 +269,101 @@ proc genPeriodic(declared: Table[string, TypeChunk],
                  length: proc (s:string): NimNode,
                  is_static: bool): TypeChunk =
   let elemString = elem.repr
-  let onechunk =
-    if elem.kind != nnkEmpty:
-      declared.genTypeChunk(elem, is_static)
-    else:
-      declared.genTypeChunk(newIdentNode("char"), is_static)
-  assert(elemString.len in 0..52, "The length of " &
-    ("expression $1 is too big and " % elemString) &
-    "it is confusing codegenerator. Please consider" &
-    " reducing the length to values less than 52." )
-  let indexlettershift =
-    if elemString.len > 26:
-      6
-    elif elemString.len > 0:
-      0
-    else:
-      ord('s') - ord('@')
-  let if_string =
-    if elemString.len == 0:
-      "tring_counter"
-    else:
-      ""
-  let indexletter = $chr(ord('@') + elemString.len +
-                         indexlettershift) & if_string
-  let size_header_chunk = declared.genTypeChunk(
-    newIdentNode("uint32"), is_static)
-  result.size = proc (source: string): NimNode =
-    let periodic_len = length(source)
-    let chunk_size = one_chunk.size(source & "[$1]" %
-                                    indexletter)
-    if periodic_len.kind != nnkCall and
-       chunk_size.kind != nnkStmtList:
-      periodic_len.infix("*", chunk_size)
-    else:
+  let is_array = length("a").kind != nnkCall
+  let lenvarname =
+    if is_array: length("").repr
+    else: "length_" & $elemString.len()
+  if elemString.isBasic() or elem.kind == nnkEmpty:
+    # For seqs or arrays of trivial objects
+    let element =
+      if elem.kind == nnkEmpty: "char"
+      else: elemString
+    let elemSize = estimateBasicSize(element)
+    result.size = proc (s: string): NimNode =
+      let arraylen = length(s)
+      arraylen.infix("*", newIntLitNode(elemSize))
+    result.serialize = proc (s: string): seq[NimNode] =
+      let lens = length(s).repr
+      let size = "$1 * $2" % [lens, $elemSize]
+      let serialization = parseExpr(SERIALIZE_PATTERN %
+                                    [s & "[0]", size])
+      @[newIfStmt((parseExpr("$1 > 0" % lens),
+                   serialization))]
+    result.deserialize = proc (s: string): seq[NimNode] =
+      let size = "$1 * $2" % [lenvarname, $elemSize]
+      let deserialization = makeNimNode(DESERIALIZE_PATTERN,
+                                        s & "[0]", size)
+      @[newIfStmt((parseExpr("$1 > 0" % lenvarname),
+                   deserialization))]
+    result.dynamic = not is_static
+    result.has_hidden = false
+  else:
+    # Complex subtypes
+    let onechunk = declared.genTypeChunk(elem, is_static)
+    let index_letter = "index" & $elemString.len()
+    result.size = proc (source: string): NimNode =
+      let periodic_len = length(source)
+      let chunk_size = one_chunk.size(source & "[$1]" %
+                                      indexletter)
+      if is_array and chunk_size.kind != nnkStmtList:
+        periodic_len.infix("*", chunk_size)
+      else:
+        let rangeexpr = newIntLitNode(0).infix("..<",
+          newTree(nnkPar, periodic_len))
+        let chunk_expr = correct_sum(chunk_size)
+        newTree(nnkForStmt, newIdentNode(indexletter),
+                rangeexpr, newTree(nnkStmtList, chunk_expr))
+    result.serialize = proc(source: string): seq[NimNode] =
+      let periodic_len = length(source)
       let rangeexpr = newIntLitNode(0).infix("..<",
         newTree(nnkPar, periodic_len))
-      let len_header =
-        correct_sum(size_header_chunk.size(""))
-      let chunk_expr = correct_sum(chunk_size)
+      let chunk_expr =
+        onechunk.serialize(source & "[$1]" % indexletter)
       let forloop = newTree(nnkForStmt,
                             newIdentNode(indexletter),
                             rangeexpr,
                             newTree(nnkStmtList, chunk_expr))
-      newStmtList(len_header, forloop)
-  result.serialize = proc(source: string): seq[NimNode] =
-    let periodic_len = length(source)
-    result = newSeq[NimNode]()
-    if periodic_len.kind == nnkCall:
-      let periodic_len_varname = "$1_size" % indexletter
-      let varname = newIdentNode(periodic_len_varname)
-      result.add(newLetStmt(varname,
-                            periodic_len))
-      result &=
-        size_header_chunk.serialize(periodic_len_varname)
-    let rangeexpr = newIntLitNode(0).infix("..<",
-      newTree(nnkPar, length(source)))
-    let chunk_expr =
-      onechunk.serialize(source & "[$1]" % indexletter)
-    let forloop = newTree(nnkForStmt,
-                          newIdentNode(indexletter),
-                          rangeexpr,
-                          newTree(nnkStmtList, chunk_expr))
-    result.add(forloop)
-    result = @[newBlockStmt(newStmtList(result))]
-  result.deserialize = proc(source: string): seq[NimNode] =
-    let periodic_len = length(source)
-    result = newSeq[NimNode]()
-    let periodic_len_varname = "$1_size" % indexletter
-    if periodic_len.kind == nnkCall:
-      let varname = newIdentNode(periodic_len_varname)
-      let thevalue =
-        newIntLitNode(0).newDotExpr(newIdentNode("uint32"))
-      result.add(newVarStmt(varname, thevalue))
-      result &=
-        size_header_chunk.deserialize(periodic_len_varname)
-    let array_len =
-      if periodic_len.kind == nnkCall:
-        newIdentNode(periodic_len_varname)
-          .newDotExpr(newIdentNode("int"))
-      else: periodic_len
-    if periodic_len.kind == nnkCall:
-      let init_template =
-        if elemString.len == 0:
-          "$1 = newString($3)"
-        else:
-          "$1 = newSeq[$2]($3)"
-      result.add(parseExpr(init_template %
-                 [source, elemString, array_len.repr]))
-    let rangeexpr = newIntLitNode(0).infix("..<",
-      newTree(nnkPar, array_len))
-    let chunk_expr =
-      onechunk.deserialize(source & "[$1]" % indexletter)
-    let forloop = newTree(nnkForStmt,
-                          newIdentNode(indexletter),
-      rangeexpr, newTree(nnkStmtList, chunk_expr))
-    result.add(forloop)
-    result = @[newBlockStmt(newStmtList(result))]
+      result = @[newBlockStmt(newStmtList(forloop))]
+    result.deserialize = proc(source: string): seq[NimNode] =
+      let periodic_len = length(source)
+      let rangeexpr = newIntLitNode(0).infix("..<",
+        newTree(nnkPar, parseExpr(lenvarname)))
+      let chunk_expr =
+        onechunk.deserialize(source & "[$1]" % indexletter)
+      let forloop = newTree(nnkForStmt,
+                            newIdentNode(indexletter),
+                            rangeexpr,
+                            newTree(nnkStmtList, chunk_expr))
+      result = @[newBlockStmt(newStmtList(forloop))]
+  if not is_array:
+    let init_template =
+      if elem.kind == nnkEmpty: "$1 = newString($3)"
+      else: "$1 = newSeq[$2]($3)"
+    let size_header_chunk = declared.genTypeChunk(
+      newIdentNode("uint32"), is_static)
+    let preresult = result
+    result.size = proc(s:string):NimNode =
+      let presize = preresult.size(s)
+      let headersize = size_header_chunk.size(s)
+      if presize.kind notin [nnkInfix, nnkIntLit, nnkCall]:
+        newStmtList(presize,
+                    newAssignment(newIdentNode("result"),
+                                  headersize))
+      else:
+        headersize.infix("+", presize)
+    result.serialize = proc(s:string): seq[NimNode] =
+      let ub = newLetStmt(newIdentNode(lenvarname),
+                          length(s)) &
+               size_header_chunk.serialize(lenvarname) &
+               preresult.serialize(s)
+      @[newBlockStmt(newStmtList(ub))]
+    result.deserialize = proc(s:string): seq[NimNode] =
+      let ub = parseExpr("var $1: int32" % lenvarname) &
+        size_header_chunk.deserialize(lenvarname) &
+        parseExpr(init_template %
+                  [s, elemString, lenvarname]) &
+        preresult.deserialize(s)
+      @[newBlockStmt(newStmtList(ub))]
 
 proc genCase(declared: Table[string, TypeChunk],
              decl: NimNode): TypeChunk =
