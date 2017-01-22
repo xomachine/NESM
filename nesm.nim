@@ -109,6 +109,10 @@
 ##       type MySeq = object
 ##         data: seq[string]
 ##
+## - Null terminated strings (3-byte smaller but slower than strings):
+##     .. code-block:: nim
+##       type NTString = cstring
+##
 ## - Object variants with nested case statements:
 ##     .. code-block:: nim
 ##       type Variant = object
@@ -177,8 +181,6 @@
 ## -------------
 ## The following will not necessarily be done but may be
 ## realized on demand
-## * implement cstring type
-##   (null terminated serialized dynamic string)
 ## * the data aligning support
 ##   (useful for reading custom data, not created by
 ##   this macro. can be partially done at client side
