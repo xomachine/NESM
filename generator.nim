@@ -165,7 +165,10 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
           declaration[0]
         else:
           declaration
-      expectMinLen(decl, 2)
+      if decl.kind == nnkNilLit:
+        elems.del(index)
+        continue
+      decl.expectMinLen(2)
       if decl[0].kind != nnkPostfix and
          thetype.kind == nnkRecList:
         result.has_hidden = true
@@ -173,7 +176,8 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
       let subtype = decl[1]
       let tc = declared.genTypeChunk(subtype, is_static)
       let elem =
-        if declaration.kind == nnkRecCase:
+        case declaration.kind
+        of nnkRecCase:
           # A bad hackery to avoid expression without address
           # problem when accessing to field under case.
           tc.caseWorkaround(subtype.repr)
@@ -199,20 +203,20 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
           result = result.infix("+", part_size)
         else:
           result_list.add(correct_sum(part_size))
-      if result_list.len > 0:
+      if not is_static:
         result_list.add(correct_sum(result))
         result = newStmtList(result_list)
       else:
         result = newTree(nnkPar, result)
     result.serialize = proc(source: string): seq[NimNode] =
-      result = newSeq[NimNode]()
+      result = @[newTree(nnkDiscardStmt,newEmptyNode())]
       for i in elems.items():
         let n = i.key
         let pat = if n.len > 0: "$1.$2" else: "$1"
         let e = i.val
         result &= e.serialize(pat % [source, n])
     result.deserialize = proc(source: string): seq[NimNode] =
-      result = newSeq[NimNode]()
+      result = @[newTree(nnkDiscardStmt,newEmptyNode())]
       let pat =
         if source.len > 0:
           source & ".$1"
