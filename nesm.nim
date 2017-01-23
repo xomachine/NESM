@@ -326,6 +326,19 @@ proc prepare(declared: var Table[string, TypeChunk],
   else:
     error("Only type declarations can be serializable")
 
+proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
+  var children = newSeq[NimNode]()
+  if declaration.len == 0:
+    return declaration
+  for c in declaration.children():
+    case c.kind
+    of nnkStaticStmt:
+      for cc in c.children():
+        children.add(cleanupTypeDeclaration(cc))
+    else:
+      children.add(cleanupTypeDeclaration(c))
+  newTree(declaration.kind, children)
+
 macro serializable*(typedecl: untyped): untyped =
   ## The main macro that generates code.
   ##
@@ -335,7 +348,7 @@ macro serializable*(typedecl: untyped): untyped =
   ##   serializable:
   ##     # Type declaration
   ##
-  result = newStmtList(toSeq(typedecl.children))
+  result = cleanupTypeDeclaration(typedecl)
   when defined(debug):
     hint(typedecl.treeRepr)
   result.add(declared.prepare(typedecl))
