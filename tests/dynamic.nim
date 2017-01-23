@@ -143,6 +143,26 @@ suite "Dynamic structure tests":
         hicase = true
       o.serialize(rnw.writer)
 
+  test "Empty cases":
+    serializable:
+      type
+        ECases = object
+          case x: char
+          of 'A'..'N':
+            y: int32
+          else:
+            discard
+    var cases = 0'u8
+    while cases < 3:
+      let rnw = get_random_reader_n_writer()
+      let o = ECases.deserialize(rnw.reader)
+      case o.x
+      of 'A'..'N':
+        cases = cases or 1'u8
+      else:
+        cases = cases or 2'u8
+      o.serialize(rnw.writer)
+
   test "Nested variants":
     serializable:
       type
