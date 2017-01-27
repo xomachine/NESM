@@ -195,7 +195,7 @@ when defined(js):
 
 import macros
 when not defined(nimdoc):
-  from typesinfo import TypeChunk
+  from typesinfo import TypeChunk, Context
   from generator import genTypeChunk, DESERIALIZER_DATA_NAME,
     DESERIALIZER_RECEIVER_NAME
 else:
@@ -250,9 +250,11 @@ const SIZE_DECLARATION = "proc size$1(" &
                          SERIALIZER_INPUT_NAME &
                          ": $2): int = discard"
 
-static:
-  var declared = initTable[string, TypeChunk]()
+
 when not defined(nimdoc):
+  static:
+    var ctx: Context
+    ctx.declared = initTable[string, TypeChunk]()
   proc generateProc(pattern: string, name: string,
                     sign: string,
                     body: seq[NimNode] = @[]): NimNode =
@@ -260,11 +262,9 @@ when not defined(nimdoc):
     if len(body) > 0:
       result.body = newStmtList(body)
 
-proc generateProcs(declared: var Table[string, TypeChunk],
-                   obj: NimNode,
-                   is_static: bool = false): NimNode
-                   {.compileTime.} =
-  when not defined(nimdoc):
+when not defined(nimdoc):
+  proc generateProcs(context: var Context,
+                     obj: NimNode): NimNode {.compileTime.} =
     expectKind(obj, nnkTypeDef)
     expectMinLen(obj, 3)
     expectKind(obj[1], nnkEmpty)
@@ -274,12 +274,12 @@ proc generateProcs(declared: var Table[string, TypeChunk],
       if typename.kind == nnkPostfix: "*"
       else: ""
     let body = obj[2]
-    let info = declared.genTypeChunk(body, is_static)
+    let info = context.genTypeChunk(body)
     let size_node = info.size(SERIALIZER_INPUT_NAME)
     let size_arg =
-      if is_static: "type($1)"
+      if context.is_static: "type($1)"
       else: "$1"
-    declared[name] = info
+    context.declared[name] = info
     let writer_conversion =
       @[parseStmt(SERIALIZE_WRITER_CONVERSION % (size_arg %
         SERIALIZER_INPUT_NAME))]
@@ -288,12 +288,12 @@ proc generateProcs(declared: var Table[string, TypeChunk],
     let serialize_writer = generateProc(SERIALIZE_WRITER_DECLARATION,
       name, sign, info.serialize(SERIALIZER_INPUT_NAME))
     let obtainer_conversion =
-      if is_static:
+      if context.is_static:
         @[parseStmt(DESERIALIZE_OBTAINER_CONVERSION % size_arg %
                     "result")]
       else: @[]
     let deserializer =
-      if is_static:
+      if context.is_static:
         generateProc(DESERIALIZE_DECLARATION, name, sign,
                      obtainer_conversion)
       else: newEmptyNode()
@@ -301,30 +301,28 @@ proc generateProcs(declared: var Table[string, TypeChunk],
       DESERIALIZE_OBTAINER_DECLARATION, name, sign,
       info.deserialize("result"))
     let size_declaration =
-      if is_static: STATIC_SIZE_DECLARATION
+      if context.is_static: STATIC_SIZE_DECLARATION
       else: SIZE_DECLARATION
     let sizeProc = generateProc(size_declaration, name, sign,
                                 @[size_node])
     newStmtList(sizeProc, serialize_writer, serializer,
                 deserialize_obtainer, deserializer)
-  else:
-    discard
 
-proc prepare(declared: var Table[string, TypeChunk],
-             statements: NimNode,
-             is_static: bool = false): NimNode
-             {.compileTime.} =
-  result = newStmtList()
-  case statements.kind
-  of nnkStmtList, nnkTypeSection, nnkStaticStmt:
-    let not_dynamic = ((statements.kind == nnkStaticStmt) or
-                       is_static)
-    for child in statements.children():
-      result.add(declared.prepare(child, not_dynamic))
-  of nnkTypeDef:
-    result.add(declared.generateProcs(statements, is_static))
-  else:
-    error("Only type declarations can be serializable")
+  proc prepare(context: var Context, statements: NimNode
+               ): NimNode {.compileTime.} =
+    result = newStmtList()
+    case statements.kind
+    of nnkStmtList, nnkTypeSection, nnkStaticStmt:
+      let oldstatic = context.is_static
+      context.is_static = context.is_static or
+        (statements.kind == nnkStaticStmt)
+      for child in statements.children():
+        result.add(context.prepare(child))
+      context.is_static = oldstatic
+    of nnkTypeDef:
+      result.add(context.generateProcs(statements))
+    else:
+      error("Only type declarations can be serializable")
 
 proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
   var children = newSeq[NimNode]()
@@ -351,7 +349,8 @@ macro serializable*(typedecl: untyped): untyped =
   result = cleanupTypeDeclaration(typedecl)
   when defined(debug):
     hint(typedecl.treeRepr)
-  result.add(declared.prepare(typedecl))
+  when not defined(nimdoc):
+    result.add(ctx.prepare(typedecl))
   when defined(debug):
     hint(result.repr)
 

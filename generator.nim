@@ -1,6 +1,6 @@
 import macros
 from typesinfo import isBasic, estimateBasicSize
-from typesinfo import TypeChunk
+from typesinfo import TypeChunk, Context
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from strutils import `%`
 from sequtils import mapIt, foldl, toSeq, filterIt
@@ -25,13 +25,12 @@ while str[^1] != byte(0):
 $2 = cast[cstring](str[0].addr)
 """ % [DESERIALIZER_RECEIVER_NAME, "$1"]
 
-proc genPeriodic(declared: Table[string, TypeChunk],
-                 elem: NimNode,
+proc genPeriodic(context: Context, elem: NimNode,
                  length: proc(source: string): NimNode,
-                 is_static: bool): TypeChunk {.compileTime.}
+                 ): TypeChunk {.compileTime.}
 
-proc genCase(declared: Table[string, TypeChunk],
-             decl: NimNode): TypeChunk {.compileTime.}
+proc genCase(context: Context, decl: NimNode
+             ): TypeChunk {.compileTime.}
 
 proc caseWorkaround(tc: TypeChunk,
                     st: string): TypeChunk {.compileTime.} =
@@ -63,9 +62,8 @@ proc correct_sum(part_size: NimNode): NimNode =
   else:
     result_node.infix("+=", part_size)
 
-proc genTypeChunk*(declared: Table[string, TypeChunk],
-                   thetype: NimNode,
-                   is_static: bool = false): TypeChunk
+proc genTypeChunk*(context: Context, thetype: NimNode,
+                   ): TypeChunk
                    {.compileTime.} =
   result.has_hidden = false
   case thetype.kind
@@ -86,9 +84,9 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         result = newSeq[NimNode]()
         result.add(makeNimNode(DESERIALIZE_PATTERN,
                                source, size.repr))
-    elif plaintype in declared:
-      let declared_type = declared[plaintype]
-      if declared_type.dynamic and is_static:
+    elif plaintype in context.declared:
+      let declared_type = context.declared[plaintype]
+      if declared_type.dynamic and context.is_static:
         error("Only static objects can be nested into" &
               " static objects, but '" & plaintype &
               "' is not a static object!")
@@ -100,13 +98,12 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
           "imported from another module. Consider including" &
           " imported module or sharing " & plaintype & "'s" &
           " fields via '*' postfix")
-      return declared[plaintype]
-    elif thetype.repr == "string" and not is_static:
+      return context.declared[plaintype]
+    elif thetype.repr == "string" and not context.is_static:
       let len_proc = proc (s: string):NimNode =
         parseExpr("len($1)" % s)
-      result = declared.genPeriodic(newEmptyNode(), len_proc,
-                                    is_static)
-    elif thetype.repr == "cstring" and not is_static:
+      result = context.genPeriodic(newEmptyNode(), len_proc)
+    elif thetype.repr == "cstring" and not context.is_static:
       let lenpattern = "len($1) + 1"
       result.serialize = proc (s: string): seq[NimNode] =
         let pattern = "writer($1, " & ("$1)" % lenpattern)
@@ -141,16 +138,15 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
           sizeDecl
       let sizeproc = proc (source: string): NimNode =
         arrayLen
-      result = declared.genPeriodic(elemType, sizeproc,
-                                    is_static)
+      result = context.genPeriodic(elemType, sizeproc)
     of "seq":
-      if is_static:
+      if context.is_static:
         error("Dynamic types not supported in static" &
               " structures")
       let elem = thetype[1]
       let seqLen = proc (source: string): NimNode =
         parseExpr("len($1)" % source)
-      result = declared.genPeriodic(elem, seqLen, is_static)
+      result = context.genPeriodic(elem, seqLen)
     else:
       error("Type $1 is not supported!" % name)
   of nnkTupleTy, nnkRecList:
@@ -174,7 +170,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         result.has_hidden = true
       let name = $decl[0].basename
       let subtype = decl[1]
-      let tc = declared.genTypeChunk(subtype, is_static)
+      let tc = context.genTypeChunk(subtype)
       let elem =
         case declaration.kind
         of nnkRecCase:
@@ -186,7 +182,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
       elems[index] = (name, elem)
       index += 1
       if declaration.kind == nnkRecCase:
-        let casechunk = declared.genCase(declaration)
+        let casechunk = context.genCase(declaration)
         elems.add(("", TypeChunk()))
         elems[index] = ("", casechunk)
         index += 1
@@ -198,12 +194,12 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
         let pat = if n.len > 0: "$1.$2" else: "$1"
         let e = i.val
         let part_size = e.size(pat % [source, n])
-        if is_static and not
+        if context.is_static and not
           (part_size.kind in [nnkStmtList, nnkCaseStmt]):
           result = result.infix("+", part_size)
         else:
           result_list.add(correct_sum(part_size))
-      if not is_static:
+      if not context.is_static:
         result_list.add(correct_sum(result))
         result = newStmtList(result_list)
       else:
@@ -231,11 +227,10 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
     expectMinLen(thetype, 3)
     assert(thetype[1].kind == nnkEmpty,
            "Inheritence not supported in serializable")
-    return declared.genTypeChunk(thetype[2], is_static)
+    return context.genTypeChunk(thetype[2])
   of nnkRefTy:
     expectMinLen(thetype, 1)
-    let objectchunk = declared.genTypeChunk(thetype[0],
-                                            is_static)
+    let objectchunk = context.genTypeChunk(thetype[0])
     result.has_hidden = objectchunk.has_hidden
     result.size = objectchunk.size
     result.serialize = objectchunk.serialize
@@ -246,8 +241,7 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
   of nnkDistinctTy:
     expectMinLen(thetype, 1)
     let basetype = thetype[0]
-    let distincted = declared.genTypeChunk(basetype,
-                                           is_static)
+    let distincted = context.genTypeChunk(basetype)
     result.has_hidden = true
     result.size = distincted.size
     result.serialize = proc(source: string): seq[NimNode] =
@@ -266,12 +260,11 @@ proc genTypeChunk*(declared: Table[string, TypeChunk],
   else:
     discard
     error("Unexpected AST")
-  result.dynamic = not is_static
+  result.dynamic = not context.is_static
 
-proc genPeriodic(declared: Table[string, TypeChunk],
-                 elem: NimNode,
+proc genPeriodic(context: Context, elem: NimNode,
                  length: proc (s:string): NimNode,
-                 is_static: bool): TypeChunk =
+                 ): TypeChunk =
   let elemString = elem.repr
   let is_array = length("a").kind != nnkCall
   let lenvarname =
@@ -299,11 +292,11 @@ proc genPeriodic(declared: Table[string, TypeChunk],
                                         s & "[0]", size)
       @[newIfStmt((parseExpr("$1 > 0" % lenvarname),
                    deserialization))]
-    result.dynamic = not is_static
+    result.dynamic = not context.is_static
     result.has_hidden = false
   else:
     # Complex subtypes
-    let onechunk = declared.genTypeChunk(elem, is_static)
+    let onechunk = context.genTypeChunk(elem)
     let index_letter = "index" & $elemString.len()
     result.size = proc (source: string): NimNode =
       let periodic_len = length(source)
@@ -343,8 +336,8 @@ proc genPeriodic(declared: Table[string, TypeChunk],
     let init_template =
       if elem.kind == nnkEmpty: "$1 = newString($3)"
       else: "$1 = newSeq[$2]($3)"
-    let size_header_chunk = declared.genTypeChunk(
-      newIdentNode("uint32"), is_static)
+    let size_header_chunk = context.genTypeChunk(
+      newIdentNode("uint32"))
     let preresult = result
     result.size = proc(s:string):NimNode =
       let presize = preresult.size(s)
@@ -369,13 +362,12 @@ proc genPeriodic(declared: Table[string, TypeChunk],
         preresult.deserialize(s)
       @[newBlockStmt(newStmtList(ub))]
 
-proc genCase(declared: Table[string, TypeChunk],
-             decl: NimNode): TypeChunk =
+proc genCase(context: Context, decl: NimNode): TypeChunk =
   let checkable = $decl[0][0].basename
   let eachbranch = proc(b: NimNode): auto =
     let conditions = toSeq(b.children)
       .filterIt(it.kind != nnkRecList)
-    let branch = declared.genTypeChunk(b.last, false)
+    let branch = context.genTypeChunk(b.last)
     let size = proc(source: string):NimNode =
       let casebody = branch.size(source)
       newTree(b.kind, conditions & @[casebody])

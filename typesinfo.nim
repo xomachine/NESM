@@ -1,5 +1,6 @@
 
 from macros import error
+from tables import Table
 
 const basic_types = [
   "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
@@ -13,6 +14,11 @@ type
     deserialize*: proc(source: string): seq[NimNode]
     dynamic*: bool
     has_hidden*: bool
+
+  Context* = object
+    declared*: Table[string, TypeChunk]
+    is_static*: bool
+    swapEndian*: bool
 
 proc isBasic*(thetype: string): bool =
   thetype in basic_types
