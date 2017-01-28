@@ -1,48 +1,50 @@
 
 from sequtils import newSeqWith
 from random import random
+from streams import Stream, StringStream, newStringStream
 
 export random
 
 type
-  RnW* = object
-    buffer*: ptr seq[byte]
-    reader*: proc (c: Natural): seq[byte]
-    writer*: proc (s: pointer, c: Natural)
+  RandomStream = ref RandomStreamObj
+  RandomStreamObj = object of Stream
+    index: int
+    buffer*: seq[char]
 
-proc random_char(): int =
-  return random(ord('A')..ord('Z'))
+proc random_char(): char =
+  return chr(random(ord('A')..ord('Z')))
 
-proc get_random_reader_n_writer*(): RnW =
-  var read_data = newSeq[byte]()
-  var index = 0
-  result.reader = proc(c:Natural): seq[byte] =
-    result = newSeqWith(c, byte(random_char()))
-    read_data &= result
+proc get_random_reader_n_writer*(): RandomStream =
+  new(result)
+  result.buffer = newSeq[char]()
+  result.index = 0
+  result.setPositionImpl = proc(s:Stream, p: int) =
+    RandomStream(s).index = p
+  result.getPositionImpl = proc(s:Stream): int =
+    RandomStream(s).index
+  result.readDataImpl = proc(s:Stream,b:pointer,c:int):int =
+    var s = RandomStream(s)
+    s.buffer &= newSeqWith(c, random_char())
+    copyMem(b, s.buffer[s.index].addr, c)
+    s.index += c
+    c
+  result.peekDataImpl = proc(s:Stream,b:pointer,c:int):int =
+    var s = RandomStream(s)
+    s.buffer &= newSeqWith(c, random_char())
+    copyMem(b, s.buffer[s.index].addr, c)
+    c
+  result.writeDataImpl = proc(s:Stream,b:pointer,c:int) =
+    var s = RandomStream(s)
+    assert(equalMem(b, s.buffer[s.index].addr, c))
+    s.index += c
 
-  result.writer = proc(s:pointer, c:Natural) =
-    assert(equalMem(s, read_data[index].unsafeAddr, c),
-           "Written memory not equals to read one")
-    index += c
-  result.buffer = read_data.addr
-
-proc get_reader_n_writer*(): RnW =
-  var written_data = newSeq[byte]()
-  var index = 0
-  result.reader = proc(c:Natural): seq[byte] =
-    result = written_data[index..<(index+c)]
-    index += c
-
-  result.writer = proc(s:pointer, c:Natural) =
-    var data = newSeq[byte](c)
-    copyMem(data[0].addr, s, c)
-    written_data &= data
-  result.buffer = written_data.addr
+proc get_reader_n_writer*(): StringStream =
+  newStringStream()
 
 template random_seq_with*(elem: untyped): untyped =
   let size = random(1..100)
   newSeqWith(size, elem)
 
 proc get_random_string*(): string =
-  var char_seq = random_seq_with(chr(random_char()))
+  var char_seq = random_seq_with(random_char())
   return cast[string](char_seq)

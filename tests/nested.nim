@@ -1,7 +1,8 @@
 import unittest
 import helpers.rnw
-from nesm import serializable
+import nesm
 from helpers.serializeimport import ImportedType
+from streams import setPosition
 
 suite "Nested types":
   test "Nested type from other module":
@@ -15,8 +16,9 @@ suite "Nested types":
     o.b = 42.int32
     o.a = ImportedType(a: get_random_string(),
                        b: random(100).int32)
-    o.serialize(rnw.writer)
-    let d = MyNested.deserialize(rnw.reader)
+    o.serialize(rnw)
+    rnw.setPosition(0)
+    let d = MyNested.deserialize(rnw)
     require(o.a.a.len == d.a.a.len)
     check(o.a.a == d.a.a)
     check(o.a.b == d.a.b)
@@ -31,6 +33,6 @@ suite "Nested types":
 #            a: int32
 #            b: ImportedType
 ##   let rrnw = get_random_reader_n_writer()
-#   let nested = StaticNested.deserialize(rrnw.reader)
-#    nested.serialize(rrnw.writer)
+#   let nested = StaticNested.deserialize(rrnw)
+#    nested.serialize(rrnw)
 #    check(true)

@@ -2,6 +2,7 @@
 import unittest
 import nesm
 import helpers.rnw
+from streams import newStringStream, setPosition
 
 suite "Complex tests":
   test "Simple object":
@@ -13,8 +14,9 @@ suite "Complex tests":
             b: array[0..5, int16]
 
     let random_rnw = get_random_reader_n_writer()
-    let dsmo = MyObj.deserialize(random_rnw.reader)
-    dsmo.serialize(random_rnw.writer)
+    let dsmo = MyObj.deserialize(random_rnw)
+    random_rnw.setPosition(0)
+    dsmo.serialize(random_rnw)
     check(true)
 
   test "Nested array object":
@@ -26,8 +28,9 @@ suite "Complex tests":
             b: array[0..5, array[0..5, int16]]
 
     let random_rnw = get_random_reader_n_writer()
-    let dsmo = MyObj.deserialize(random_rnw.reader)
-    dsmo.serialize(random_rnw.writer)
+    let dsmo = MyObj.deserialize(random_rnw)
+    random_rnw.setPosition(0)
+    dsmo.serialize(random_rnw)
     check(true)
   
   test "Nested object":
@@ -42,8 +45,9 @@ suite "Complex tests":
             b: MyNestedObj
 
     let random_rnw = get_random_reader_n_writer()
-    let dsmo = MyNestedObj.deserialize(random_rnw.reader)
-    dsmo.serialize(random_rnw.writer)
+    let dsmo = MyNestedObj.deserialize(random_rnw)
+    random_rnw.setPosition(0)
+    dsmo.serialize(random_rnw)
     check(true)
 
   test "Array of tuples":
@@ -55,6 +59,7 @@ suite "Complex tests":
             b: char
 
     let random_rnw = get_random_reader_n_writer()
-    let dsmo = MyObj.deserialize(random_rnw.reader)
-    dsmo.serialize(random_rnw.writer)
+    let dsmo = MyObj.deserialize(random_rnw)
+    random_rnw.setPosition(0)
+    dsmo.serialize(random_rnw)
     check(true)
