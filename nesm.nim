@@ -198,47 +198,67 @@ when not defined(nimdoc):
   from typesinfo import TypeChunk, Context
   from generator import genTypeChunk, STREAM_NAME
 else:
+  import endians
   type TypeChunk = object
 
 from strutils import `%`
 from sequtils import toSeq
 from tables import Table, initTable, contains, `[]`, `[]=`
-from streams import Stream, readData, writeData, readStr,
-                    readChar, newStringStream
-from endians import swapEndian16, swapEndian32, swapEndian64
-export Stream, readData, writeData, readStr, readChar,
-       newStringStream
-export swapEndian16, swapEndian32, swapEndian64
+from streams import Stream, newStringStream
 const SERIALIZER_INPUT_NAME = "obj"
 const DESERIALIZER_DATA_NAME = "data"
 const SERIALIZE_DECLARATION = """proc serialize$1(""" &
   SERIALIZER_INPUT_NAME & """: $2): string = discard"""
-const SERIALIZE_STREAM_CONVERSION = """
-var ss = newStringStream()
-serialize(""" & SERIALIZER_INPUT_NAME & """, ss)
-return ss.data
-"""
-const SERIALIZE_STREAM_DECLARATION = "proc serialize$1(" &
-  SERIALIZER_INPUT_NAME & ": $2, " & STREAM_NAME &
-  ": Stream) = discard"
+const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
+  """(thetype: typedesc[$2], """ & DESERIALIZER_DATA_NAME &
+  """: seq[byte | char | int8 | uint8] | string):""" &
+  """$2 = discard"""
+
 when not defined(nimdoc):
-  const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
-    """(thetype: typedesc[$2], """ & DESERIALIZER_DATA_NAME &
-    """: seq[byte | char | int8 | uint8] | string):""" &
-    """$2 = discard"""
-  # $1 - typedesc -> forwarded
-  # $2 - dataname
-  const DESERIALIZE_STREAM_CONVERSION = ("""
-assert($2.len >= $1.size(), "Given sequence should""" &
-    """ contain at least " & ($1.size()).repr & " bytes!")
-let ss = newStringStream(cast[string]($2))
-result = deserialize(type(result), ss)
-""") % ["$1", DESERIALIZER_DATA_NAME]
-  # $1 - *
-  # $2 - typename
-  const DESERIALIZE_STREAM_DECLARATION =
-    "proc deserialize$1" & "(thetype: typedesc[$2], " &
-    STREAM_NAME & ": Stream): $2 = discard"
+  proc makeSerializeStreamDeclaration(typename: string,
+      is_exported: bool,
+      body: seq[NimNode]): NimNode {.compileTime.} =
+    let itn = !typename
+    let fname =
+      if is_exported: newIdentNode("serialize").postfix("*")
+      else: newIdentNode("serialize")
+    let isin = !SERIALIZER_INPUT_NAME
+    let thebody = newStmtList(body)
+    quote do:
+      proc `fname`(`isin`: `itn`,
+                   `STREAM_NAME`: Stream) = `thebody`
+
+  proc makeDeserializeStreamDeclaration(typename: string,
+      is_exported: bool,
+      body: seq[NimNode]): NimNode {.compileTime.} =
+    let itn = !typename
+    let fname =
+      if is_exported:
+        newIdentNode("deserialize").postfix("*")
+      else: newIdentNode("deserialize")
+    let thebody = newStmtList(body)
+    quote do:
+      proc `fname`(thetype: typedesc[`itn`],
+                   `STREAM_NAME`: Stream): `itn` = `thebody`
+
+proc makeSerializeStreamConversion(): NimNode {.compileTime.} =
+  let isin = !SERIALIZER_INPUT_NAME
+  quote do:
+    let ss = newStringStream()
+    serialize(`isin`, ss)
+    ss.data
+
+proc makeDeserializeStreamConversion(name: string
+    ): NimNode {.compileTime.} =
+  let iname = !name
+  let ddn = !DESERIALIZER_DATA_NAME
+  quote do:
+    assert(`ddn`.len >= type(`iname`).size(),
+           "Given sequence should contain at least " &
+           $(type(`iname`).size()) & " bytes!")
+    let ss = newStringStream(cast[string](`ddn`))
+    deserialize(type(`iname`), ss)
+
 const STATIC_SIZE_DECLARATION =
   """proc size$1(thetype: typedesc[$2]): int = discard"""
 const SIZE_DECLARATION = "proc size$1(" &
@@ -265,8 +285,9 @@ when not defined(nimdoc):
     expectKind(obj[1], nnkEmpty)
     let typename = obj[0]
     let name = $typename.basename
+    let is_shared = typename.kind == nnkPostfix
     let sign =
-      if typename.kind == nnkPostfix: "*"
+      if is_shared: "*"
       else: ""
     let body = obj[2]
     let info = context.genTypeChunk(body)
@@ -276,32 +297,32 @@ when not defined(nimdoc):
       else: "$1"
     context.declared[name] = info
     let writer_conversion =
-      @[parseStmt(SERIALIZE_STREAM_CONVERSION % (size_arg %
-        SERIALIZER_INPUT_NAME))]
-    let serializer = generateProc(SERIALIZE_DECLARATION, name, sign,
-      writer_conversion)
-    let serialize_writer = generateProc(SERIALIZE_STREAM_DECLARATION,
-      name, sign, info.serialize(SERIALIZER_INPUT_NAME))
+      @[makeSerializeStreamConversion()]
+    let serializer = generateProc(SERIALIZE_DECLARATION,
+                                  name, sign,
+                                  writer_conversion)
+    let serialize_stream =
+      makeSerializeStreamDeclaration(name, is_shared,
+        info.serialize(SERIALIZER_INPUT_NAME))
     let obtainer_conversion =
       if context.is_static:
-        @[parseStmt(DESERIALIZE_STREAM_CONVERSION % size_arg %
-                    "result")]
+        @[makeDeserializeStreamConversion("result")]
       else: @[]
     let deserializer =
       if context.is_static:
         generateProc(DESERIALIZE_DECLARATION, name, sign,
                      obtainer_conversion)
       else: newEmptyNode()
-    let deserialize_obtainer = generateProc(
-      DESERIALIZE_STREAM_DECLARATION, name, sign,
+    let deserialize_stream =
+      makeDeserializeStreamDeclaration(name, is_shared,
       info.deserialize("result"))
     let size_declaration =
       if context.is_static: STATIC_SIZE_DECLARATION
       else: SIZE_DECLARATION
     let sizeProc = generateProc(size_declaration, name, sign,
                                 @[size_node])
-    newStmtList(sizeProc, serialize_writer, serializer,
-                deserialize_obtainer, deserializer)
+    newStmtList(sizeProc, serialize_stream, serializer,
+                deserialize_stream, deserializer)
 
   proc prepare(context: var Context, statements: NimNode
                ): NimNode {.compileTime.} =
@@ -328,6 +349,14 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
     of nnkStaticStmt:
       for cc in c.children():
         children.add(cleanupTypeDeclaration(cc))
+    of nnkIdentDefs:
+      if c[^2].repr == "cstring":
+        var newID = newNimNode(nnkIdentDefs)
+        copyChildrenTo(c, newID)
+        newID[^2] = newIdentNode("string")
+        children.add(newID)
+      else:
+        children.add(c)
     else:
       children.add(cleanupTypeDeclaration(c))
   newTree(declaration.kind, children)

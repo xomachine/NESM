@@ -1,57 +1,87 @@
 import macros
 from typesinfo import isBasic, estimateBasicSize
 from typesinfo import TypeChunk, Context
-from tables import Table, contains, `[]`, `[]=`, initTable, pairs
+from tables import Table, contains, `[]`, `[]=`, initTable,
+                   pairs
 from strutils import `%`
 from sequtils import mapIt, foldl, toSeq, filterIt
+from streams import readData, writeData, readChar, readStr,
+                    write
+from endians import swapEndian16, swapEndian32, swapEndian64
 
-const STREAM_NAME* = "thestream"
+static:
+  let STREAM_NAME* = !"thestream"
 # $1 - target object field; $2 - size of data to obtain
-const DESERIALIZE_PATTERN = """
-assert($2 == """ & STREAM_NAME &
-  """.readData($1.unsafeAddr, $2), "Stream was not """ &
-  """provided enough data")
-"""
 const DESERIALIZE_SWAP_PATTERN = """
-let thedata = """ & STREAM_NAME & """.readStr($2)
-swapEndian$3($1.unsafeAddr, thedata.unsafeAddr)
 """
 const SERIALIZE_PATTERN = """
-""" & STREAM_NAME & """.writeData($1.unsafeAddr, $2)
 """
 const SERIALIZE_SWAP_PATTERN = """
-var thedata = newString($2)
-swapEndian$3(thedata.addr, $1.unsafeAddr)
 """
-const CSTRING_DESERIALIZER_PATTERN = """
-var str = "" & $1.readChar()
-while str[^1] != '\x00':
-  str &= $1.readChar()
-$2 = cast[cstring](str[0].addr)
-""" % [STREAM_NAME, "$1"]
+
+proc genCStringDeserialize(name: string
+                           ): NimNode {.compileTime.} =
+  let iname = parseExpr(name)
+  quote do:
+    block:
+      var str = "" & `STREAM_NAME`.readChar()
+      var index = 0
+      while str[index] != '\x00':
+        str &= `STREAM_NAME`.readChar()
+        index += 1
+      `iname` = str[0..<index]
+
+proc genCStringSerialize(name: string
+                         ): NimNode {.compileTime.} =
+  let iname = parseExpr(name)
+  quote do:
+    `STREAM_NAME`.writeData(`iname`[0].unsafeAddr,
+                            `iname`.len)
+    `STREAM_NAME`.write('\x00')
 
 proc genDeserialize(name: string,
                     size: string): NimNode {.compileTime.} =
-  parseStmt(DESERIALIZE_PATTERN % [name, size])
+  let iname = parseExpr(name)
+  let isize = parseExpr(size)
+  quote do:
+    assert(`isize` ==
+           `STREAM_NAME`.readData(`iname`.unsafeAddr,
+                                  `isize`),
+           "Stream was not provided enough data")
 
 proc genDeserializeSwap(name: string,
                         size: int): NimNode {.compileTime.} =
   assert(size in [2, 4, 8], "The endian of " & name &
          " cannot be swapped. Size = " & $size)
-  newBlockStmt(parseStmt(DESERIALIZE_SWAP_PATTERN %
-                         [name, $size, $(size * 8)]))
+  let iname = parseExpr(name)
+  let isize = newIntLitNode(size)
+  let fname = !("swapEndian" & $(size * 8))
+  quote do:
+    block:
+      let thedata = `STREAM_NAME`.readStr(`isize`)
+      `fname`(`iname`.unsafeAddr, thedata.unsafeAddr)
+
 
 proc genSerialize(name: string,
                   size: string): NimNode {.compileTime.} =
-  parseStmt(SERIALIZE_PATTERN % [name, size])
+  let iname = parseExpr(name)
+  let isize = parseExpr(size)
+  quote do:
+    `STREAM_NAME`.writeData(`iname`.unsafeAddr, `isize`)
 
 proc genSerializeSwap(name: string,
                       size: int): NimNode {.compileTime.} =
   assert(size in [2, 4, 8], "The endian of " & name &
          " cannot be swapped. Size = " & $size)
-  result = newBlockStmt(parseStmt(SERIALIZE_SWAP_PATTERN %
-                        [name, $size, $(size * 8)]))
-  copyChildrenTo(result.last, genSerialize("thedata", $size))
+  let sernode = genSerialize("thedata", $size)
+  let iname = parseExpr(name)
+  let isize = newIntLitNode(size)
+  let fname = !("swapEndian" & $(size * 8))
+  quote do:
+    block:
+      var thedata = newString(`isize`)
+      `fname`(thedata.addr, `iname`.unsafeAddr)
+      `sernode`
 
 proc genPeriodic(context: Context, elem: NimNode,
                  length: proc(source: string): NimNode,
@@ -131,11 +161,9 @@ proc genTypeChunk*(context: Context, thetype: NimNode,
     elif thetype.repr == "cstring" and not context.is_static:
       let lenpattern = "len($1) + 1"
       result.serialize = proc (s: string): seq[NimNode] =
-        let pattern = STREAM_NAME & ".writeData($1, " &
-          ("$1)" % lenpattern)
-        @[parseExpr(pattern % [s])]
+        @[genCStringSerialize(s)]
       result.deserialize = proc (s: string): seq[NimNode] =
-        @[newBlockStmt(parseStmt(CSTRING_DESERIALIZER_PATTERN % [s, ""]))]
+        @[genCStringDeserialize(s)]
       result.size = proc (s: string): NimNode =
         parseExpr(lenpattern % s)
     elif plaintype in ["float", "int", "uint"]:
