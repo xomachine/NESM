@@ -196,54 +196,49 @@ when defined(js):
 import macros
 when not defined(nimdoc):
   from typesinfo import TypeChunk, Context
-  from generator import genTypeChunk, DESERIALIZER_DATA_NAME,
-    DESERIALIZER_RECEIVER_NAME
+  from generator import genTypeChunk, STREAM_NAME
 else:
   type TypeChunk = object
 
 from strutils import `%`
 from sequtils import toSeq
 from tables import Table, initTable, contains, `[]`, `[]=`
+from streams import Stream, readData, writeData, readStr,
+                    readChar, newStringStream
+from endians import swapEndian16, swapEndian32, swapEndian64
+export Stream, readData, writeData, readStr, readChar,
+       newStringStream
+export swapEndian16, swapEndian32, swapEndian64
 const SERIALIZER_INPUT_NAME = "obj"
+const DESERIALIZER_DATA_NAME = "data"
 const SERIALIZE_DECLARATION = """proc serialize$1(""" &
-  SERIALIZER_INPUT_NAME & """: $2): seq[byte] = discard"""
-const SERIALIZE_WRITER_CONVERSION = """
-var index: uint = 0
-result = newSeq[byte]($1.size())
-let r_ptr = cast[uint](result[0].unsafeAddr)
-var writer = proc(a: pointer, size: Natural) =
-  copyMem(cast[pointer](r_ptr + index), a, size)
-  index += size
-serialize(""" & SERIALIZER_INPUT_NAME & """, writer)
+  SERIALIZER_INPUT_NAME & """: $2): string = discard"""
+const SERIALIZE_STREAM_CONVERSION = """
+var ss = newStringStream()
+serialize(""" & SERIALIZER_INPUT_NAME & """, ss)
+return ss.data
 """
-const SERIALIZE_WRITER_DECLARATION = "proc serialize$1(" &
-  SERIALIZER_INPUT_NAME & ": $2, writer: proc(a:pointer, s:Natural))" &
-  " = discard"
+const SERIALIZE_STREAM_DECLARATION = "proc serialize$1(" &
+  SERIALIZER_INPUT_NAME & ": $2, " & STREAM_NAME &
+  ": Stream) = discard"
 when not defined(nimdoc):
   const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
     """(thetype: typedesc[$2], """ & DESERIALIZER_DATA_NAME &
     """: seq[byte | char | int8 | uint8] | string):""" &
     """$2 = discard"""
-  const DESERIALIZE_OBTAINER_CONVERSION = """
-let datalen = """ & DESERIALIZER_DATA_NAME &
-    """.len
-assert(datalen >= $1.size(), "Given sequence should contain at """ &
-    """least $1 bytes!")
-var index = 0
-proc obtain(count: Natural): seq[byte] =
-  let lastindex =
-    if index + count < datalen: index + count
-    else: datalen
-  result = cast[seq[byte]](""" & DESERIALIZER_DATA_NAME &
-    """[index..<lastindex])
-  index = lastindex
-result = deserialize(type(result), obtain)
-"""
-  const DESERIALIZE_OBTAINER_DECLARATION = "proc deserialize$1" &
-    "(thetype: typedesc[$2], " & DESERIALIZER_RECEIVER_NAME &
-    ": proc (count: Natural): (seq[byte | int8 | uint8 | char]" &
-    "| string)" &
-    "): $2 = discard"
+  # $1 - typedesc -> forwarded
+  # $2 - dataname
+  const DESERIALIZE_STREAM_CONVERSION = ("""
+assert($2.len >= $1.size(), "Given sequence should""" &
+    """ contain at least " & ($1.size()).repr & " bytes!")
+let ss = newStringStream(cast[string]($2))
+result = deserialize(type(result), ss)
+""") % ["$1", DESERIALIZER_DATA_NAME]
+  # $1 - *
+  # $2 - typename
+  const DESERIALIZE_STREAM_DECLARATION =
+    "proc deserialize$1" & "(thetype: typedesc[$2], " &
+    STREAM_NAME & ": Stream): $2 = discard"
 const STATIC_SIZE_DECLARATION =
   """proc size$1(thetype: typedesc[$2]): int = discard"""
 const SIZE_DECLARATION = "proc size$1(" &
@@ -281,15 +276,15 @@ when not defined(nimdoc):
       else: "$1"
     context.declared[name] = info
     let writer_conversion =
-      @[parseStmt(SERIALIZE_WRITER_CONVERSION % (size_arg %
+      @[parseStmt(SERIALIZE_STREAM_CONVERSION % (size_arg %
         SERIALIZER_INPUT_NAME))]
     let serializer = generateProc(SERIALIZE_DECLARATION, name, sign,
       writer_conversion)
-    let serialize_writer = generateProc(SERIALIZE_WRITER_DECLARATION,
+    let serialize_writer = generateProc(SERIALIZE_STREAM_DECLARATION,
       name, sign, info.serialize(SERIALIZER_INPUT_NAME))
     let obtainer_conversion =
       if context.is_static:
-        @[parseStmt(DESERIALIZE_OBTAINER_CONVERSION % size_arg %
+        @[parseStmt(DESERIALIZE_STREAM_CONVERSION % size_arg %
                     "result")]
       else: @[]
     let deserializer =
@@ -298,7 +293,7 @@ when not defined(nimdoc):
                      obtainer_conversion)
       else: newEmptyNode()
     let deserialize_obtainer = generateProc(
-      DESERIALIZE_OBTAINER_DECLARATION, name, sign,
+      DESERIALIZE_STREAM_DECLARATION, name, sign,
       info.deserialize("result"))
     let size_declaration =
       if context.is_static: STATIC_SIZE_DECLARATION

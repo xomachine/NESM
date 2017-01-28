@@ -5,25 +5,53 @@ from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from strutils import `%`
 from sequtils import mapIt, foldl, toSeq, filterIt
 
-const DESERIALIZER_DATA_NAME* = "data"
-const DESERIALIZER_RECEIVER_NAME* = "obtain"
+const STREAM_NAME* = "thestream"
 # $1 - target object field; $2 - size of data to obtain
 const DESERIALIZE_PATTERN = """
-let thedata = """ & DESERIALIZER_RECEIVER_NAME & """($2)
-assert(len(thedata) == $2, """ &
-  """"The length of received data is not equal to $2, but equal""" &
-  """ to " & $$len(thedata))
-copyMem($1.unsafeAddr, thedata[0].unsafeAddr, $2)
+assert($2 == """ & STREAM_NAME &
+  """.readData($1.unsafeAddr, $2), "Stream was not """ &
+  """provided enough data")
+"""
+const DESERIALIZE_SWAP_PATTERN = """
+let thedata = """ & STREAM_NAME & """.readStr($2)
+swapEndian$3($1.unsafeAddr, thedata.unsafeAddr)
 """
 const SERIALIZE_PATTERN = """
-writer($1.unsafeAddr, $2)
+""" & STREAM_NAME & """.writeData($1.unsafeAddr, $2)
+"""
+const SERIALIZE_SWAP_PATTERN = """
+var thedata = newString($2)
+swapEndian$3(thedata.addr, $1.unsafeAddr)
 """
 const CSTRING_DESERIALIZER_PATTERN = """
-var str = $1(1)
-while str[^1] != byte(0):
-  str &= $1(1)
+var str = "" & $1.readChar()
+while str[^1] != '\x00':
+  str &= $1.readChar()
 $2 = cast[cstring](str[0].addr)
-""" % [DESERIALIZER_RECEIVER_NAME, "$1"]
+""" % [STREAM_NAME, "$1"]
+
+proc genDeserialize(name: string,
+                    size: string): NimNode {.compileTime.} =
+  parseStmt(DESERIALIZE_PATTERN % [name, size])
+
+proc genDeserializeSwap(name: string,
+                        size: int): NimNode {.compileTime.} =
+  assert(size in [2, 4, 8], "The endian of " & name &
+         " cannot be swapped. Size = " & $size)
+  newBlockStmt(parseStmt(DESERIALIZE_SWAP_PATTERN %
+                         [name, $size, $(size * 8)]))
+
+proc genSerialize(name: string,
+                  size: string): NimNode {.compileTime.} =
+  parseStmt(SERIALIZE_PATTERN % [name, size])
+
+proc genSerializeSwap(name: string,
+                      size: int): NimNode {.compileTime.} =
+  assert(size in [2, 4, 8], "The endian of " & name &
+         " cannot be swapped. Size = " & $size)
+  result = newBlockStmt(parseStmt(SERIALIZE_SWAP_PATTERN %
+                        [name, $size, $(size * 8)]))
+  copyChildrenTo(result.last, genSerialize("thedata", $size))
 
 proc genPeriodic(context: Context, elem: NimNode,
                  length: proc(source: string): NimNode,
@@ -50,11 +78,6 @@ proc caseWorkaround(tc: TypeChunk,
     @[newBlockStmt(newStmtList(list))]
   t
 
-proc makeNimNode(pattern: string, target: string,
-                 size: string): NimNode {.compileTime.} =
-  let list = parseStmt(pattern % [target, size])
-  result = newBlockStmt(newStmtList(list))
-
 proc correct_sum(part_size: NimNode): NimNode =
   let result_node = newIdentNode("result")
   if part_size.kind in [nnkStmtList, nnkCaseStmt]:
@@ -77,13 +100,15 @@ proc genTypeChunk*(context: Context, thetype: NimNode,
       result.size = proc (source: string): NimNode =
         newIntLitNode(size)
       result.serialize = proc(source: string): seq[NimNode] =
-        result = newSeq[NimNode]()
-        result.add(parseExpr(SERIALIZE_PATTERN %
-                             [source, size.repr]))
+        if context.swapEndian and (size in [2, 4, 8]):
+          @[genSerializeSwap(source, size)]
+        else:
+          @[genSerialize(source, $size)]
       result.deserialize = proc(source: string): seq[NimNode] =
-        result = newSeq[NimNode]()
-        result.add(makeNimNode(DESERIALIZE_PATTERN,
-                               source, size.repr))
+        if context.swapEndian and (size in [2, 4, 8]):
+          @[genDeserializeSwap(source, size)]
+        else:
+          @[genDeserialize(source, $size)]
     elif plaintype in context.declared:
       let declared_type = context.declared[plaintype]
       if declared_type.dynamic and context.is_static:
@@ -106,17 +131,17 @@ proc genTypeChunk*(context: Context, thetype: NimNode,
     elif thetype.repr == "cstring" and not context.is_static:
       let lenpattern = "len($1) + 1"
       result.serialize = proc (s: string): seq[NimNode] =
-        let pattern = "writer($1, " & ("$1)" % lenpattern)
+        let pattern = STREAM_NAME & ".writeData($1, " &
+          ("$1)" % lenpattern)
         @[parseExpr(pattern % [s])]
       result.deserialize = proc (s: string): seq[NimNode] =
-        @[makeNimNode(CSTRING_DESERIALIZER_PATTERN, s, "")]
+        @[newBlockStmt(parseStmt(CSTRING_DESERIALIZER_PATTERN % [s, ""]))]
       result.size = proc (s: string): NimNode =
         parseExpr(lenpattern % s)
+    elif plaintype in ["float", "int", "uint"]:
+      error((("The type $1 is not allowed due to ambiguity" &
+              ". Consider using $1") % plaintype) & "32.")
     else:
-      if plaintype in ["float", "int", "uint"]:
-        error((("The type $1 is not allowed due to" &
-                " ambiguity. Consider using $1") %
-               plaintype) & "32.")
       error(("Type $1 is not a basic " % plaintype) &
             "type nor a complex type under 'serializable'" &
             " block!")
@@ -282,14 +307,12 @@ proc genPeriodic(context: Context, elem: NimNode,
     result.serialize = proc (s: string): seq[NimNode] =
       let lens = length(s).repr
       let size = "$1 * $2" % [lens, $elemSize]
-      let serialization = parseExpr(SERIALIZE_PATTERN %
-                                    [s & "[0]", size])
+      let serialization = genSerialize(s & "[0]", size)
       @[newIfStmt((parseExpr("$1 > 0" % lens),
                    serialization))]
     result.deserialize = proc (s: string): seq[NimNode] =
       let size = "$1 * $2" % [lenvarname, $elemSize]
-      let deserialization = makeNimNode(DESERIALIZE_PATTERN,
-                                        s & "[0]", size)
+      let deserialization = genDeserialize(s & "[0]", size)
       @[newIfStmt((parseExpr("$1 > 0" % lenvarname),
                    deserialization))]
     result.dynamic = not context.is_static
@@ -322,7 +345,6 @@ proc genPeriodic(context: Context, elem: NimNode,
                             newTree(nnkStmtList, chunk_expr))
       result = @[newBlockStmt(newStmtList(forloop))]
     result.deserialize = proc(source: string): seq[NimNode] =
-      let periodic_len = length(source)
       let rangeexpr = newIntLitNode(0).infix("..<",
         newTree(nnkPar, parseExpr(lenvarname)))
       let chunk_expr =
