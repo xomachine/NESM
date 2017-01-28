@@ -1,6 +1,6 @@
 import unittest
 import helpers.rnw
-import nesm
+from nesm import serializable
 from helpers.serializeimport import ImportedType
 from streams import setPosition
 

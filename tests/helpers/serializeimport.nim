@@ -1,5 +1,5 @@
 
-import nesm
+from nesm import serializable
 
 serializable:
   type

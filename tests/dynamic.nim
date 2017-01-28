@@ -1,6 +1,6 @@
 
 import unittest
-import nesm
+from nesm import serializable
 import helpers.rnw
 from sequtils import newSeqWith
 from streams import setPosition, newStringStream

@@ -1,6 +1,6 @@
 
 import unittest
-import nesm
+from nesm import serializable
 
 # Just a codegen test
 serializable:

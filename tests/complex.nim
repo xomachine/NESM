@@ -1,6 +1,6 @@
 
 import unittest
-import nesm
+from nesm import serializable
 import helpers.rnw
 from streams import newStringStream, setPosition
 
