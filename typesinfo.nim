@@ -9,9 +9,9 @@ const basic_types = [
 
 type
   TypeChunk* = object
-    size*: proc(source: string): NimNode
-    serialize*: proc(source: string): NimNode
-    deserialize*: proc(source: string): NimNode
+    size*: proc(source: NimNode): NimNode
+    serialize*: proc(source: NimNode): NimNode
+    deserialize*: proc(source: NimNode): NimNode
     dynamic*: bool
     has_hidden*: bool
 

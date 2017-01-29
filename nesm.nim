@@ -289,10 +289,8 @@ when not defined(nimdoc):
       else: ""
     let body = obj[2]
     let info = context.genTypeChunk(body)
-    let size_node = info.size(SERIALIZER_INPUT_NAME)
-    let size_arg =
-      if context.is_static: "type($1)"
-      else: "$1"
+    let size_node =
+      info.size(newIdentNode(SERIALIZER_INPUT_NAME))
     context.declared[name] = info
     let writer_conversion = makeSerializeStreamConversion()
     let serializer = generateProc(SERIALIZE_DECLARATION,
@@ -300,7 +298,7 @@ when not defined(nimdoc):
                                   writer_conversion)
     let serialize_stream =
       makeSerializeStreamDeclaration(name, is_shared,
-        info.serialize(SERIALIZER_INPUT_NAME))
+        info.serialize(newIdentNode(SERIALIZER_INPUT_NAME)))
     let obtainer_conversion =
       if context.is_static:
         makeDeserializeStreamConversion("result")
@@ -312,7 +310,7 @@ when not defined(nimdoc):
       else: newEmptyNode()
     let deserialize_stream =
       makeDeserializeStreamDeclaration(name, is_shared,
-      info.deserialize("result"))
+      info.deserialize(newIdentNode("result")))
     let size_declaration =
       if context.is_static: STATIC_SIZE_DECLARATION
       else: SIZE_DECLARATION
