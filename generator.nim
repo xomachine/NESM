@@ -5,8 +5,7 @@ from tables import Table, contains, `[]`, `[]=`, initTable,
                    pairs
 from strutils import `%`
 from sequtils import mapIt, foldl, toSeq, filterIt
-from streams import readData, writeData, readChar, readStr,
-                    write
+from streams import readData, writeData, readChar, write
 from endians import swapEndian16, swapEndian32, swapEndian64
 
 static:
@@ -49,18 +48,27 @@ proc genDeserialize(name: string,
                                   `isize`),
            "Stream was not provided enough data")
 
+proc genSwapCall(size: int): NimNode {.compileTime.} =
+  case size
+  of 2: bindSym("swapEndian16")
+  of 4: bindSym("swapEndian32")
+  of 8: bindSym("swapEndian64")
+  else:
+    error("The endian cannot be swapped due to no " &
+          "implementation of swap for size = " & $size)
+    newEmptyNode()
+
 proc genDeserializeSwap(name: string,
                         size: int): NimNode {.compileTime.} =
-  assert(size in [2, 4, 8], "The endian of " & name &
-         " cannot be swapped. Size = " & $size)
   let iname = parseExpr(name)
   let isize = newIntLitNode(size)
-  let fname = !("swapEndian" & $(size * 8))
+  let swapcall = genSwapCall(size)
   quote do:
-    block:
-      let thedata = `STREAM_NAME`.readStr(`isize`)
-      `fname`(`iname`.unsafeAddr, thedata.unsafeAddr)
-
+    var thedata = newString(`isize`)
+    assert(`STREAM_NAME`.readData(thedata.addr, `isize`) ==
+           `isize`,
+           "Stream has not provided enough data")
+    `swapcall`(`iname`.unsafeAddr, thedata.addr)
 
 proc genSerialize(name: string,
                   size: string): NimNode {.compileTime.} =
@@ -71,17 +79,13 @@ proc genSerialize(name: string,
 
 proc genSerializeSwap(name: string,
                       size: int): NimNode {.compileTime.} =
-  assert(size in [2, 4, 8], "The endian of " & name &
-         " cannot be swapped. Size = " & $size)
-  let sernode = genSerialize("thedata", $size)
   let iname = parseExpr(name)
   let isize = newIntLitNode(size)
-  let fname = !("swapEndian" & $(size * 8))
+  let swapcall = genSwapCall(size)
   quote do:
-    block:
-      var thedata = newString(`isize`)
-      `fname`(thedata.addr, `iname`.unsafeAddr)
-      `sernode`
+    var thedata = newString(`isize`)
+    `swapcall`(thedata.addr, `iname`.unsafeAddr)
+    `STREAM_NAME`.writeData(thedata.unsafeAddr, `isize`)
 
 proc genPeriodic(context: Context, elem: NimNode,
                  length: proc(source: string): NimNode,
@@ -206,6 +210,8 @@ proc genTypeChunk*(context: Context, thetype: NimNode,
     var elems =
       newSeq[tuple[key:string, val:TypeChunk]](thetype.len())
     var index = 0
+    var newContext = context
+    let settingsKeyword = newIdentNode("set").postfix("!")
     for declaration in thetype.children():
       let decl =
         case declaration.kind
@@ -217,13 +223,26 @@ proc genTypeChunk*(context: Context, thetype: NimNode,
       if decl.kind == nnkNilLit:
         elems.del(index)
         continue
+      elif decl[0] == settingsKeyword:
+        let command = decl[1]
+        case command.kind
+        of nnkIdent:
+          let strcommand = $command
+          if strcommand in ["bigEndian", "littleEndian"]:
+            newContext.swapEndian = strcommand != $cpuEndian
+          else:
+            error("Unknown setting: " & strcommand)
+        else:
+          error("Unknown setting: " & $command.repr)
+        elems.del(index)
+        continue
       decl.expectMinLen(2)
       if decl[0].kind != nnkPostfix and
          thetype.kind == nnkRecList:
         result.has_hidden = true
       let name = $decl[0].basename
       let subtype = decl[1]
-      let tc = context.genTypeChunk(subtype)
+      let tc = newContext.genTypeChunk(subtype)
       let elem =
         case declaration.kind
         of nnkRecCase:
@@ -235,7 +254,7 @@ proc genTypeChunk*(context: Context, thetype: NimNode,
       elems[index] = (name, elem)
       index += 1
       if declaration.kind == nnkRecCase:
-        let casechunk = context.genCase(declaration)
+        let casechunk = newContext.genCase(declaration)
         elems.add(("", TypeChunk()))
         elems[index] = ("", casechunk)
         index += 1

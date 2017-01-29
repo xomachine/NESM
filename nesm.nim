@@ -342,6 +342,7 @@ when not defined(nimdoc):
 
 proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
   var children = newSeq[NimNode]()
+  let settingsKeyword = newIdentNode("set").postfix("!")
   if declaration.len == 0:
     return declaration
   for c in declaration.children():
@@ -355,6 +356,8 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
         copyChildrenTo(c, newID)
         newID[^2] = newIdentNode("string")
         children.add(newID)
+      elif c[0] == settingsKeyword:
+        continue
       else:
         children.add(c)
     else:
