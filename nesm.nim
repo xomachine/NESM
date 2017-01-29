@@ -217,29 +217,27 @@ const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
 when not defined(nimdoc):
   proc makeSerializeStreamDeclaration(typename: string,
       is_exported: bool,
-      body: seq[NimNode]): NimNode {.compileTime.} =
+      body: NimNode): NimNode {.compileTime.} =
     let itn = !typename
     let fname =
       if is_exported: newIdentNode("serialize").postfix("*")
       else: newIdentNode("serialize")
     let isin = !SERIALIZER_INPUT_NAME
-    let thebody = newStmtList(body)
     quote do:
       proc `fname`(`isin`: `itn`,
-                   `STREAM_NAME`: Stream) = `thebody`
+                   `STREAM_NAME`: Stream) = `body`
 
   proc makeDeserializeStreamDeclaration(typename: string,
       is_exported: bool,
-      body: seq[NimNode]): NimNode {.compileTime.} =
+      body: NimNode): NimNode {.compileTime.} =
     let itn = !typename
     let fname =
       if is_exported:
         newIdentNode("deserialize").postfix("*")
       else: newIdentNode("deserialize")
-    let thebody = newStmtList(body)
     quote do:
       proc `fname`(thetype: typedesc[`itn`],
-                   `STREAM_NAME`: Stream): `itn` = `thebody`
+                   `STREAM_NAME`: Stream): `itn` = `body`
 
 proc makeSerializeStreamConversion(): NimNode {.compileTime.} =
   let isin = !SERIALIZER_INPUT_NAME
@@ -272,10 +270,10 @@ when not defined(nimdoc):
     ctx.declared = initTable[string, TypeChunk]()
   proc generateProc(pattern: string, name: string,
                     sign: string,
-                    body: seq[NimNode] = @[]): NimNode =
+                    body: NimNode = newEmptyNode()): NimNode =
     result = parseExpr(pattern % [sign, name])
-    if len(body) > 0:
-      result.body = newStmtList(body)
+    if body.kind != nnkEmpty:
+      result.body = body
 
 when not defined(nimdoc):
   proc generateProcs(context: var Context,
@@ -296,8 +294,7 @@ when not defined(nimdoc):
       if context.is_static: "type($1)"
       else: "$1"
     context.declared[name] = info
-    let writer_conversion =
-      @[makeSerializeStreamConversion()]
+    let writer_conversion = makeSerializeStreamConversion()
     let serializer = generateProc(SERIALIZE_DECLARATION,
                                   name, sign,
                                   writer_conversion)
@@ -306,8 +303,8 @@ when not defined(nimdoc):
         info.serialize(SERIALIZER_INPUT_NAME))
     let obtainer_conversion =
       if context.is_static:
-        @[makeDeserializeStreamConversion("result")]
-      else: @[]
+        makeDeserializeStreamConversion("result")
+      else: newEmptyNode()
     let deserializer =
       if context.is_static:
         generateProc(DESERIALIZE_DECLARATION, name, sign,
@@ -320,7 +317,7 @@ when not defined(nimdoc):
       if context.is_static: STATIC_SIZE_DECLARATION
       else: SIZE_DECLARATION
     let sizeProc = generateProc(size_declaration, name, sign,
-                                @[size_node])
+                                size_node)
     newStmtList(sizeProc, serialize_stream, serializer,
                 deserialize_stream, deserializer)
 
