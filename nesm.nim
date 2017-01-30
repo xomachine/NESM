@@ -36,47 +36,37 @@
 ##    result += 1
 ##    result += 0
 ##
-##  proc serialize(obj: Ball; writer: proc (a: pointer; s: Natural)) =
-##    writer(obj.weight.unsafeAddr, 4)
-##    writer(obj.diameter.unsafeAddr, 4)
-##    writer(obj.isHollow.unsafeAddr, 1)
+##  proc serialize(obj: Ball; thestream: Stream) =
+##     discard
+##     thestream.writeData(obj.weight.unsafeAddr, 4)
+##     thestream.writeData(obj.diameter.unsafeAddr, 4)
+##     thestream.writeData(obj.isHollow.unsafeAddr, 1)
 ##
-##  proc serialize(obj: Ball): seq[byte] =
-##    var index: uint = 0
-##    result = newSeq[byte](obj.size())
-##    let r_ptr = cast[uint](result[0].unsafeAddr)
-##    var writer = proc (a: pointer; size: Natural) =
-##      copyMem(cast[pointer](r_ptr + index), a, size)
-##      index += size
-##    serialize(obj, writer)
+##   proc serialize(obj: Ball): string =
+##     let ss142002 = newStringStream()
+##     serialize(obj, ss142002)
+##     ss142002.data
 ##
-##  proc deserialize(thetype: typedesc[Ball]; obtain: proc (count: Natural): (
-##      seq[byte | int8 | uint8 | char] | string)): Ball =
-##    block:
-##        let thedata = obtain(4)
-##        assert(len(thedata) == 4, "The length of received data is not equal to 4, but equal to " &
-##            $ len(thedata))
-##        copyMem(result.weight.unsafeAddr, thedata[0].unsafeAddr, 4)
-##    block:
-##        let thedata = obtain(4)
-##        assert(len(thedata) == 4, "The length of received data is not equal to 4, but equal to " &
-##            $ len(thedata))
-##        copyMem(result.diameter.unsafeAddr, thedata[0].unsafeAddr, 4)
-##    block:
-##        let thedata = obtain(1)
-##        assert(len(thedata) == 1, "The length of received data is not equal to 1, but equal to " &
-##            $ len(thedata))
-##        copyMem(result.isHollow.unsafeAddr, thedata[0].unsafeAddr, 1)
+##   proc deserialize(thetype142004: typedesc[Ball]; thestream: Stream): Ball =
+##     discard
+##     assert(4 ==
+##         thestream.readData(result.weight.unsafeAddr, 4),
+##            "Stream was not provided enough data")
+##     assert(4 ==
+##         thestream.readData(result.diameter.unsafeAddr, 4),
+##            "Stream was not provided enough data")
+##     assert(1 ==
+##         thestream.readData(result.isHollow.unsafeAddr, 1),
+##            "Stream was not provided enough data")
 ##
 ## As you may see from the code above, the macro generates three kinds
 ## of procedures: serializer, deserializer and size estimator.
-## The serialization is being performing in a following way:
+## The serialization is being performed in a following way:
 ## each memory region of variable is copied
-## to the resulting array back-to-back. This approach achieves both
-## of smallest
+## to the resulting stream back-to-back.
+## This approach achieves both of smallest
 ## serialized object size and independence from the compilator
-## specific object
-## representation.
+## specific object representation.
 ##
 ## At the moment the following types of object are supported:
 ## - Aliases from basic types or previously defined in this block:
@@ -166,19 +156,34 @@
 ##     (0 + 4 + 4 + 1)
 ##   
 ##   proc deserialize(thetype: typedesc[Ball];
-##                     data: seq[byte | char | int8 | uint8] | string): Ball =
-##       let datalen = data.len
-##       assert(datalen >= type(result).size(),
-##              "Given sequence should contain at least type(result) bytes!")
-##       var index = 0
-##       proc obtain(count: Natural): seq[byte] =
-##         let lastindex = if index + count < datalen: index + count else: datalen
-##         result = cast[seq[byte]](data[index ..< lastindex])
-##         index = lastindex
-##       result = deserialize(type(result), obtain)
+##                   data: seq[byte | char | int8 | uint8] | string): Ball =
+##     assert(data.len >= type(result).size(), "Given sequence should contain at least " &
+##         $ (type(result).size()) & " bytes!")
+##     let ss142004 = newStringStream(cast[string](data))
+##     deserialize(type(result), ss142004)
 ##
-##  Future ideas
-## -------------
+## Endianness switching
+## -----------------
+## There is a way exists to set which endian should be used
+## while [de]serialization particular structure or part of
+## the structure. A special keyword **set!** allows to set
+## the endian for all the fields of structure below until the
+## end or other **set!** keyword. E.g.:
+##
+## .. code-block:: nim
+##   serializable:
+##     type Ball = object
+##       weight: float32        # This value will be serialized in *cpuEndian* endian
+##       set! :bigEndian        # The space between set! and :bigEndian is required!
+##       diameter: int32        # This value will be serialized in big endian regardless of *cpuEndian*
+##       set! :littleEndian     # Only "bigEndian" and "littleEndian" values allowed
+##       color: array[3, int16] # Values in this array will be serialized in little endian
+##
+## The generated code will use the **swapEndian{16|32|64}()**
+## calls from the endians module to change endianness.
+##
+## Future ideas
+## ------------
 ## The following will not necessarily be done but may be
 ## realized on demand
 ## * the data aligning support
@@ -380,7 +385,7 @@ when defined(nimdoc):
   type TheType* = object
     ## This type will be used as example to show which procedures will be generated
     ## by the **serializable** macro.
-  proc size*(q: typedesc[TheType]): int =
+  proc size*(thetype: typedesc[TheType]): int =
     ## Returns the size of serialized type. The type should be
     ## placed under the **static** section inside the
     ## **serializable** macro to access this procedure.
@@ -388,44 +393,34 @@ when defined(nimdoc):
     ## at compile time.
     0
 
-  proc size*(q: TheType): int =
+  proc size*(thetype: TheType): int =
     ## Returns the size of serialized type. Available for types
     ## which declarations is not placed under the **static**
     ## section.
     discard
 
-  proc serialize*(obj: TheType;
-                 writer: proc (a: pointer; s: Natural)) =
-    ## Serializes `TheType` and writes result using given
-    ## `writer` procedure.
-    ## The `writer` procedure should receive two arguments:
-    ## a pointer with data to be written and the size of
-    ## data to be written. The macro garantees that in
-    ## memory between pointer and (pointer+size) will
-    ## be placed readable data. Trying to read any other
-    ## data around or attempts to write data at this location
-    ## may lead to segmentation fault.
+  proc serialize*(obj: TheType; stream: Stream) =
+    ## Serializes `TheType` and writes result to the
+    ## given `stream`.
     discard
 
-  proc serialize*(obj: TheType): seq[byte] =
-    ## Serializes `TheType` to seq of bytes.
+  proc serialize*(obj: TheType): string =
+    ## Serializes `TheType` to string.
+    ## Underlying implementation uses StringStream and
+    ## `serialize()` procedure above.
     ## More detailed description can be found
-    ## in top level documentation.
+    ## in the top level documentation.
     discard
 
-  proc deserialize*(q: typedesc[TheType],
-    obtain: proc (count: Natural): (
-      seq[byte | int8 | uint8 | char] | string)): TheType
+  proc deserialize*(thetype: typedesc[TheType],
+                    stream: Stream): TheType
     {.raises: AssertionError.} =
-    ## Interprets the data received by calling the `obtain` procedure
+    ## Interprets the data received from the `stream`
     ## as `TheType` and deserializes it then.
-    ## The `obtain` procedure should receive one argument: the
-    ## count of bytes to be deserialized and return the sequence
-    ## or string with given length. When the `obtain` procedure
-    ## will return anything other than expected, an `AssertionError`
-    ## will be raised.
+    ## When the stream will not provide enough bytes
+    ## an `AssertionError` will be raised.
     discard
-  proc deserialize*(q: typedesc[TheType],
+  proc deserialize*(thetype: typedesc[TheType],
     data: string | seq[byte | char | int8 | uint8]): TheType
     {.raises: AssertionError.} =
     ## Interprets given data as serialized `TheType` and
