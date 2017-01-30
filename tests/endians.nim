@@ -37,3 +37,23 @@ suite "Endianness support":
     check(o.f == 22)    
     let so = o.serialize()
     check(so == teststring)
+
+  test "Arrays":
+    serializable:
+      static:
+        type SomeArrays = object
+          set! :bigEndian
+          data: array[2, int16]
+          lilstring: array[3, char]
+          set! :littleEndian
+          set: array[2, int16]
+
+    let teststring = "\x00\x11\x00\x12hi!\x13\x00\x14\x00"
+    let o = SomeArrays.deserialize(teststring)
+    check(o.data[0] == 17)
+    check(o.data[1] == 18)
+    check(o.lilstring == ['h', 'i', '!'])
+    check(o.set[0] == 19)
+    check(o.set[1] == 20)
+    let so = o.serialize()
+    check(so == teststring)
