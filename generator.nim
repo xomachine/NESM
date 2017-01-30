@@ -328,7 +328,7 @@ proc genPeriodic(context: Context, elem: NimNode,
   let lenvarname =
     if is_array: lencheck
     else: nskVar.genSym("length")
-  if elemString.isBasic() or elem.kind == nnkEmpty and
+  if (elemString.isBasic() or elem.kind == nnkEmpty) and
      not context.swapEndian:
     # For seqs or arrays of trivial objects
     let element =
