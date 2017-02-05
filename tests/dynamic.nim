@@ -169,6 +169,32 @@ suite "Dynamic structure tests":
       rnw.setPosition(0)
       o.serialize(rnw)
 
+  test "Static cases":
+    serializable:
+      static:
+        type SCase = object
+          case x: char
+          of 'A'..'K':
+            y: int64
+          of 'N'..'Q':
+            z: int16
+          else:
+            discard
+    require(SCase.size() == 9)
+    var cases = 0'u8
+    while cases < 7:
+      let rnw = get_random_reader_n_writer()
+      let o = SCase.deserialize(rnw)
+      case o.x
+      of 'A'..'K':
+        cases = cases or 1'u8
+      of 'N'..'Q':
+        cases = cases or 2'u8
+      else:
+        cases = cases or 4'u8
+      rnw.setPosition(0)
+      o.serialize(rnw)
+
   test "Nested variants":
     serializable:
       type
