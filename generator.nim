@@ -416,6 +416,39 @@ proc genPeriodic(context: Context, elem: NimNode,
         `s` = `init_template`(`lenvarname`)
         `deserialization`
 
+proc evalSize(e: NimNode): BiggestInt {.compileTime.} =
+  case e.kind
+  of nnkIntLit:
+    e.intVal
+  of nnkInfix:
+    e.expectLen(3)
+    let first = evalSize(e[1])
+    let second = evalSize(e[2])
+    case $e[0]
+    of "+":
+      first + second
+    of "*":
+      first * second
+    else:
+      error("Unexpected operation: " & e.repr)
+      0
+  of nnkPar:
+    e.expectLen(1)
+    evalSize(e[0])
+  of nnkStmtList:
+    e.expectLen(1)
+    evalSize(e[0])
+  of nnkOfBranch, nnkElse:
+    evalSize(e.last)
+  of nnkIdent:
+    error("Constants are not supported in static object " &
+          "variants")
+    0
+  else:
+    error("Unexpected node: " & e.treeRepr &
+          ", non-static expression passed?")
+    0
+
 proc genCase(context: Context, decl: NimNode): TypeChunk =
   let checkable = decl[0][0].basename
   let eachbranch = proc(b: NimNode): auto =
@@ -443,7 +476,10 @@ proc genCase(context: Context, decl: NimNode): TypeChunk =
     (quote do: `source`.`checkable`).last
   result.size = proc(source: NimNode):NimNode =
     let sizenodes:seq[NimNode] = sizes.mapIt(it(source))
-    newTree(nnkCaseStmt, condition(source) & sizenodes)
+    if context.is_static:
+      newIntLitNode(sizenodes.mapIt(evalSize(it)).max)
+    else:
+      newTree(nnkCaseStmt, condition(source) & sizenodes)
   result.serialize = proc(source: NimNode): NimNode =
     let sernodes:seq[NimNode] = serializes.mapIt(it(source))
     newTree(nnkCaseStmt, condition(source) & sernodes)
