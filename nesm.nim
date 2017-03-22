@@ -200,8 +200,8 @@ when defined(js):
 
 import macros
 when not defined(nimdoc):
-  from typesinfo import TypeChunk, Context
-  from generator import genTypeChunk, STREAM_NAME
+  from private.typesinfo import TypeChunk, Context
+  from private.generator import genTypeChunk, STREAM_NAME
 else:
   import endians
   type TypeChunk = object
