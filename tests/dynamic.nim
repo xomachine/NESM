@@ -35,15 +35,15 @@ suite "Dynamic structure tests":
   test "Sequence of sequences":
     serializable:
       type
-        MyObj = object
+        MySeqSeqObj = object
           a: seq[seq[int32]]
-    var obj: MyObj
+    var obj: MySeqSeqObj
     obj.a = random_seq_with(
               random_seq_with(int32(random(100))))
     let rnw = get_reader_n_writer()
     obj.serialize(rnw)
     rnw.setPosition(0)
-    let another_obj = MyObj.deserialize(rnw)
+    let another_obj = MySeqSeqObj.deserialize(rnw)
     require(obj.a.len == another_obj.a.len)
     for i in 0..<obj.a.len:
       require(obj.a[i].len == another_obj.a[i].len)
@@ -53,18 +53,18 @@ suite "Dynamic structure tests":
   test "String":
     serializable:
       type
-        MyObj = object
+        MyStrObj = object
           a: int32
           b: string
           c: int32
-    var o: MyObj
+    var o: MyStrObj
     o.a = random(1000).int32
     o.c = random(1000).int32
     o.b = get_random_string()
     let rnw = get_reader_n_writer()
     o.serialize(rnw)
     rnw.setPosition(0)
-    let ao = MyObj.deserialize(rnw)
+    let ao = MyStrObj.deserialize(rnw)
     check(o.a == ao.a)
     require(o.b.len == ao.b.len)
     check(o.c == ao.c)
@@ -92,14 +92,14 @@ suite "Dynamic structure tests":
   test "Empty sequence":
     serializable:
       type
-        MyObj = object
+        MyEmptyObj = object
           a: seq[int32]
-    var o: MyObj
+    var o: MyEmptyObj
     o.a = @[]
     let rnw = get_reader_n_writer()
     o.serialize(rnw)
     rnw.setPosition(0)
-    let ao = MyObj.deserialize(rnw)
+    let ao = MyEmptyObj.deserialize(rnw)
     require(ao.a.len == o.a.len)
     require(ao.a.len == 0)
     check(ao.a == o.a)

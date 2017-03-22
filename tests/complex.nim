@@ -23,12 +23,12 @@ suite "Complex tests":
     serializable:
       static:
         type
-          MyObj = object
+          MyArrayObj = object
             a: bool
             b: array[0..5, array[0..5, int16]]
 
     let random_rnw = get_random_reader_n_writer()
-    let dsmo = MyObj.deserialize(random_rnw)
+    let dsmo = MyArrayObj.deserialize(random_rnw)
     random_rnw.setPosition(0)
     dsmo.serialize(random_rnw)
     check(true)
@@ -40,12 +40,12 @@ suite "Complex tests":
           MyNestedObj = object
             a: array[0..7, float32]
             b: char
-          MyObj = object
+          MyNObj = object
             a: bool
             b: MyNestedObj
 
     let random_rnw = get_random_reader_n_writer()
-    let dsmo = MyNestedObj.deserialize(random_rnw)
+    let dsmo = MyNObj.deserialize(random_rnw)
     random_rnw.setPosition(0)
     dsmo.serialize(random_rnw)
     check(true)
@@ -54,12 +54,12 @@ suite "Complex tests":
     serializable:
       static:
         type
-          MyObj = object
+          MyATObj = object
             a: array[0..7, tuple[a: int32, b: array[5,char]]]
             b: char
 
     let random_rnw = get_random_reader_n_writer()
-    let dsmo = MyObj.deserialize(random_rnw)
+    let dsmo = MyATObj.deserialize(random_rnw)
     random_rnw.setPosition(0)
     dsmo.serialize(random_rnw)
     check(true)
