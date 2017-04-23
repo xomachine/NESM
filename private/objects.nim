@@ -3,91 +3,90 @@ from generator import genTypeChunk, correct_sum
 from typesinfo import TypeChunk, Context
 import macros
 
+type
+  Field = tuple
+    name: string
+    chunk: TypeChunk
+  FieldChunk = tuple
+    entries: seq[Field]
+    has_hidden: bool
+
 proc genObject*(context: Context, thetype: NimNode): TypeChunk {.compileTime.}
 proc genCase(context: Context, decl: NimNode): TypeChunk {.compileTime.}
-proc caseWorkaround(tc: TypeChunk, st: NimNode): TypeChunk {.compileTime.}
+proc caseWorkaround(tc: TypeChunk): TypeChunk {.compileTime.}
 proc evalSize(e: NimNode): BiggestInt {.compileTime.}
+proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
 
-proc caseWorkaround(tc: TypeChunk, st: NimNode): TypeChunk =
+proc caseWorkaround(tc: TypeChunk): TypeChunk =
   # st - type of field under case
-  var t = tc
-  let oldser = t.serialize
-  let olddeser = t.deserialize
+  result = tc
+  let oldser = tc.serialize
+  let olddeser = tc.deserialize
   let tmpvar = nskVar.genSym("tmp")
-  t.serialize = proc(s:NimNode): NimNode =
+  result.serialize = proc(s:NimNode): NimNode =
     let os = oldser(tmpvar)
     quote do:
       var `tmpvar` = `s`
       `os`
-  t.deserialize = proc(s:NimNode): NimNode =
+  result.deserialize = proc(s:NimNode): NimNode =
     let ods = olddeser(tmpvar)
     quote do:
-      var `tmpvar`: `st`
+      var `tmpvar`: type(`s`)
       `ods`
       `s` = `tmpvar`
-  t
 
 proc genObject(context: Context, thetype: NimNode): TypeChunk =
-  var elems =
-    newSeq[tuple[key:string, val:TypeChunk]](thetype.len())
-  var index = 0
+  var elems = newSeq[Field]()
   var newContext = context
   let settingsKeyword = newIdentNode("set").postfix("!")
   for declaration in thetype.children():
-    let decl =
-      case declaration.kind
-      of nnkRecCase:
-        expectMinLen(declaration, 2)
-        declaration[0]
-      else:
-        declaration
-    if decl.kind == nnkNilLit:
-      elems.del(index)
+    case declaration.kind
+    of nnkNilLit:
       continue
-    elif decl[0] == settingsKeyword:
-      let command = decl[1]
-      case command.kind
-      of nnkIdent:
-        let strcommand = $command
-        if strcommand in ["bigEndian", "littleEndian"]:
-          newContext.swapEndian = strcommand != $cpuEndian
-        else:
-          error("Unknown setting: " & strcommand)
-      else:
-        error("Unknown setting: " & $command.repr)
-      elems.del(index)
-      continue
-    decl.expectMinLen(2)
-    if decl[0].kind != nnkPostfix and
-       thetype.kind == nnkRecList:
-      result.has_hidden = true
-    let name = $decl[0].basename
-    let subtype = decl[1]
-    let tc = newContext.genTypeChunk(subtype)
-    let elem =
-      case declaration.kind
-      of nnkRecCase:
-        # A bad hackery to avoid expression without address
-        # problem when accessing to field under case.
-        tc.caseWorkaround(subtype)
-      else:
-        tc
-    elems[index] = (name, elem)
-    index += 1
-    if declaration.kind == nnkRecCase:
+    of nnkRecCase:
+      expectMinLen(declaration, 2)
+      # declaration[0]
+      # A bad hackery to avoid expression without address
+      # problem when accessing to field under case.
+      let fchunk = newContext.genFields(declaration[0])
+      result.has_hidden = result.has_hidden or fchunk.has_hidden
+      assert fchunk.entries.len == 1
+      let name = fchunk.entries[0].name
+      let chunk = fchunk.entries[0].chunk
+      elems.add((name, chunk.caseWorkaround()))
       let casechunk = newContext.genCase(declaration)
-      elems.add(("", TypeChunk()))
-      elems[index] = ("", casechunk)
-      index += 1
+      elems.add(("", casechunk))
+    of nnkIdentDefs:
+      declaration.expectMinLen(2)
+      if declaration[0] == settingsKeyword:
+        let command = declaration[1]
+        case command.kind
+        of nnkIdent:
+          let strcommand = $command
+          if strcommand in ["bigEndian", "littleEndian"]:
+            newContext.swapEndian = strcommand != $cpuEndian
+          else:
+            error("Unknown setting: " & strcommand)
+        else:
+          error("Unknown setting: " & $command.repr)
+        continue
+      let fchunk = newContext.genFields(declaration)
+      elems &= fchunk.entries
+      result.has_hidden = result.has_hidden or fchunk.has_hidden
+    else:
+      error("Unknown AST: \n" & declaration.repr & "\n" & declaration.treeRepr)
+  if thetype.kind == nnkTupleTy:
+    # There are no hidden entries in tuples
+    result.has_hidden = false
   result.size = proc (source: NimNode): NimNode =
     result = newIntLitNode(0)
     var result_list = newSeq[NimNode]()
     for i in elems.items():
-      let n = !i.key
+      let n = !i.name
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).last
         else: source
-      let e = i.val
+      let e = i.chunk
       let part_size = e.size(newsource)
       if context.is_static and not
         (part_size.kind in [nnkStmtList, nnkCaseStmt]):
@@ -102,21 +101,37 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
   result.serialize = proc(source: NimNode): NimNode =
     result = newStmtList(parseExpr("discard"))
     for i in elems.items():
-      let n = !i.key
+      let n = !i.name
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).last
         else: source
-      let e = i.val
+      let e = i.chunk
       result.add(e.serialize(newsource))
   result.deserialize = proc(source: NimNode): NimNode =
     result = newStmtList(parseExpr("discard"))
     for i in elems.items():
-      let n = !i.key
+      let n = !i.name
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).last
         else: source
-      let e = i.val
+      let e = i.chunk
       result &= e.deserialize(newsource)
+
+proc genFields(context: Context, decl: NimNode): FieldChunk =
+  decl.expectKind(nnkIdentDefs)
+  decl.expectMinLen(2)
+  result.entries = newSeq[Field]()
+  result.has_hidden = false
+  let last =
+    if decl[^1].kind == nnkEmpty: decl.len - 2
+    else: decl.len - 1
+  let subtype = decl[last]
+  let chunk = context.genTypeChunk(subtype)
+  for i in 0..<last:
+    if decl[i].kind != nnkPostfix:
+      result.has_hidden = true
+    let name = $decl[i].basename
+    result.entries.add((name: name, chunk: chunk))
 
 
 proc genCase(context: Context, decl: NimNode): TypeChunk =
