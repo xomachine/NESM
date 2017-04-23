@@ -1,0 +1,1 @@
+--define:type_is_type32
