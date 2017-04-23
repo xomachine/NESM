@@ -364,6 +364,17 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
       children.add(cleanupTypeDeclaration(c))
   newTree(declaration.kind, children)
 
+macro toSerializable*(typedecl: typed): untyped =
+  ## Generate [de]serialize procedures for existing type
+  result = newStmtList()
+  when defined(debug):
+    hint(typedecl.symbol.getImpl().treeRepr())
+    hint(typedecl.symbol.getImpl().repr())
+  let ast = parseStmt("type " & typedecl.symbol.getImpl().repr())
+  when defined(debug):
+    hint(ast.treeRepr)
+  result.add(ctx.prepare(ast))
+
 macro serializable*(typedecl: untyped): untyped =
   ## The main macro that generates code.
   ##
