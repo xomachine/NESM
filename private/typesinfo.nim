@@ -4,7 +4,7 @@ from tables import Table
 
 const basic_types = [
   "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
-    "bool", "char", "byte", "float32", "float64"
+    "bool", "char", "byte", "float32", "float64", "int", "uint", "float"
 ]
 
 type
@@ -30,9 +30,12 @@ proc estimateBasicSize*(thetype: string): int {.compileTime.} =
   of "uint32", "int32", "float32": sizeof(int32)
   of "uint64", "int64", "float64": sizeof(int64)
   of "uint", "int", "float":
-    error(thetype & "'s size is undecided and depends from architecture." &
-      " Consider using " & thetype & "32 or other specific type.")
-    0
+    when defined(type_is_type32):
+      sizeof(int32)
+    else:
+      error(thetype & "'s size is undecided and depends from architecture." &
+        " Consider using " & thetype & "32 or other specific type.")
+      0
   else:
     error("Can not estimate size of type " & thetype)
     0
