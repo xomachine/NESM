@@ -19,6 +19,17 @@ suite "Complex tests":
     dsmo.serialize(random_rnw)
     check(true)
 
+  test "Field list of one type":
+    serializable:
+      static:
+        type MyListObj = object
+          a, b: int32
+    let rnw = get_random_reader_n_writer()
+    let dsmo = MyListObj.deserialize(rnw)
+    rnw.setPosition(0)
+    dsmo.serialize(rnw)
+    check(true)
+
   test "Nested array object":
     serializable:
       static:
