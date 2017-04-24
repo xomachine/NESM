@@ -189,10 +189,7 @@ proc evalSize(e: NimNode): BiggestInt =
     else:
       error("Unexpected operation: " & e.repr)
       0
-  of nnkPar:
-    e.expectLen(1)
-    evalSize(e[0])
-  of nnkStmtList:
+  of nnkPar, nnkStmtList:
     e.expectLen(1)
     evalSize(e[0])
   of nnkOfBranch, nnkElse:
