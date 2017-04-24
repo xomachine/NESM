@@ -8,12 +8,12 @@ from tables import Table, initTable, contains, `[]`, `[]=`
 from streams import Stream, newStringStream
 
 when not defined(nimdoc):
-  from private.typesinfo import TypeChunk, Context
-  from private.generator import genTypeChunk, STREAM_NAME
+  from nesm.typesinfo import TypeChunk, Context
+  from nesm.generator import genTypeChunk, STREAM_NAME
 else:
   import endians
   type TypeChunk = object
-  include private.documentation
+  include nesm.documentation
 
 const SERIALIZER_INPUT_NAME = "obj"
 const DESERIALIZER_DATA_NAME = "data"
