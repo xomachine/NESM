@@ -90,8 +90,8 @@ when not defined(nimdoc):
     expectMinLen(obj, 3)
     expectKind(obj[1], nnkEmpty)
     let typename = obj[0]
-    let name = $typename.basename
     let is_shared = typename.kind == nnkPostfix
+    let name = if is_shared: $typename.basename else: $typename
     let sign =
       if is_shared: "*"
       else: ""
@@ -171,9 +171,8 @@ macro toSerializable*(typedecl: typed): untyped =
   ## Generate [de]serialize procedures for existing type
   result = newStmtList()
   when defined(debug):
-    hint(typedecl.symbol.getImpl().treeRepr())
     hint(typedecl.symbol.getImpl().repr())
-  let ast = parseStmt("type " & typedecl.symbol.getImpl().repr())
+  let ast = typedecl.symbol.getImpl()
   when defined(debug):
     hint(ast.treeRepr)
   result.add(ctx.prepare(ast))

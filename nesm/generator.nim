@@ -91,7 +91,7 @@ proc correct_sum(part_size: NimNode): NimNode =
 proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
   result.has_hidden = false
   case thetype.kind
-  of nnkIdent:
+  of nnkIdent, nnkSym:
     # It's a type, declared as identifier. Might be a basic
     # type or
     # some of previously declared type in serializable block
