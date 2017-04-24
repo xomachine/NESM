@@ -136,9 +136,6 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
         genCStringDeserialize(s)
       result.size = proc (s: NimNode): NimNode =
         (quote do: len(`s`) + 1).last
-    elif plaintype in ["float", "int", "uint"]:
-      error((("The type $1 is not allowed due to ambiguity" &
-              ". Consider using $1") % plaintype) & "32.")
     else:
       error(("Type $1 is not a basic " % plaintype) &
             "type nor a complex type under 'serializable'" &
