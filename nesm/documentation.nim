@@ -192,9 +192,12 @@
 ##   serializable:
 ##     type MyInt = distinct int
 ##
-## To avoid this behaviour one can tell the macro to treat all basic type
-## description without size specification as ones with the '32' postfix
-## by using **-d:type_to_type32** compiler switch.
+## To avoid this behaviour one can tell the macro to allow all basic type
+## description without size specification
+## by using **-d:allow_undefined_type_size** compiler switch.
+## You must avoid to use this switch as far as possible because when
+## the switch enabled the library can not guarantee proper deserialization
+## of objects on devices with different architectures.
 ##
 ## Converting existent types to serializable
 ## -----------------------------------------

@@ -1,1 +1,1 @@
---define:type_is_type32
+--define:allow_undefined_type_size

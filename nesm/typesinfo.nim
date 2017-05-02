@@ -1,5 +1,5 @@
 
-from macros import error
+from macros import error, warning
 from tables import Table
 
 const basic_types = [
@@ -30,8 +30,18 @@ proc estimateBasicSize*(thetype: string): int {.compileTime.} =
   of "uint32", "int32", "float32": sizeof(int32)
   of "uint64", "int64", "float64": sizeof(int64)
   of "uint", "int", "float":
-    when defined(type_is_type32):
-      sizeof(int32)
+    when defined(allow_undefined_type_size):
+      warning("You are using VERY dangerous option " &
+          "'allow_undefined_type_size'." &
+          " Please try to keep basic types size defined explicitly and " &
+          "avoid this option. If it is impossible, well you are on your " &
+          "own. The library can not guarantee that your objects will be " &
+          "deserialized in proper way on devices with different arch.")
+      case thetype
+      of "uint": sizeof(uint)
+      of "int": sizeof(int)
+      of "float": sizeof(float)
+      else: 0
     else:
       error(thetype & "'s size is undecided and depends from architecture." &
         " Consider using " & thetype & "32 or other specific type.")
