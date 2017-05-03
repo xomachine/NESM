@@ -89,7 +89,7 @@ when not defined(nimdoc):
     expectKind(obj, nnkTypeDef)
     expectMinLen(obj, 3)
     expectKind(obj[1], nnkEmpty)
-    let typename = obj[0]
+    let typename = if obj[0].kind == nnkPragmaExpr: obj[0][0] else: obj[0]
     let is_shared = typename.kind == nnkPostfix
     let name = if is_shared: $typename.basename else: $typename
     let sign =
