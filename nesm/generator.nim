@@ -15,6 +15,7 @@ static:
 from objects import genObject
 from basics import genBasic
 from periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
+from enums import genEnum
 
 
 proc correct_sum(part_size: NimNode): NimNode =
@@ -110,6 +111,8 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
     result.deserialize = proc(source: NimNode): NimNode =
       result = newStmtList(parseExpr("new(result)"))
       result.add(objectchunk.deserialize(source))
+  of nnkEnumTy:
+    result = context.genEnum(thetype)
   of nnkDistinctTy:
     expectMinLen(thetype, 1)
     let basetype = thetype[0]
