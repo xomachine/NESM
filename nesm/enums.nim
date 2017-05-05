@@ -3,16 +3,29 @@ from nesm.typesinfo import TypeChunk, Context
 from nesm.basics import genBasic
 
 proc estimateEnumSize(declaration: NimNode): int {.compileTime.} =
-  var maxvalue: int64 = 0
+  var lowest: uint64 = 0
+  var highest: uint64 = 0
+  var residue: uint64 = 0
   for c in declaration.children():
-    if c.kind == nnkEnumFieldDef:
+    case c.kind
+    of nnkEnumFieldDef:
       c.expectMinLen(2)
-      let num = c[1].intVal
-      let normalized: int64 =
-        if num < 0: abs(num)
-        else: (num shr 1).int64 + 1
-      if normalized > maxvalue:
-        maxvalue = normalized
+      case c[1].kind
+      of nnkPrefix:
+        residue = c[1][1].intVal.uint64
+        if residue > lowest:
+          lowest = residue
+        highest = 0
+      else:
+        highest = c[1].intVal.uint64
+        residue = 0
+    of nnkIdent:
+      if residue > 0'u64: residue -= 1
+      else: highest += 1
+    of nnkEmpty: discard
+    else:
+      error("Unexpected AST: " & c.repr)
+  let maxvalue = (max(lowest, highest) shr 1).int64 + 1
   case maxvalue
   of 0..int8.high: 1
   of (-int8.low)..int16.high: 2
