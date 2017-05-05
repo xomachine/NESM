@@ -1,6 +1,6 @@
 import macros
-from typesinfo import TypeChunk, Context
-from basics import genBasic
+from nesm.typesinfo import TypeChunk, Context
+from nesm.basics import genBasic
 
 proc estimateEnumSize(declaration: NimNode): int {.compileTime.} =
   var maxvalue: int64 = 0

@@ -1,11 +1,15 @@
-from generator import STREAM_NAME
-from typesinfo import Context, TypeChunk
+from nesm.typesinfo import Context, TypeChunk
 from endians import swapEndian16, swapEndian32, swapEndian64
 from streams import writeData, readData
 import macros
 
-proc genDeserialize*(name: NimNode,
-                    size: NimNode): NimNode {.compileTime.} =
+proc genBasic*(context: Context, size: int): TypeChunk {.compileTime.}
+proc genSerialize*(name: NimNode, size: NimNode): NimNode {.compileTime.}
+proc genDeserialize*(name: NimNode, size: NimNode): NimNode {.compileTime.}
+
+from nesm.generator import STREAM_NAME
+
+proc genDeserialize*(name: NimNode, size: NimNode): NimNode =
   quote do:
     assert(`size` ==
            `STREAM_NAME`.readData(`name`.unsafeAddr, `size`),
@@ -32,8 +36,7 @@ proc genDeserializeSwap(name: NimNode,
            "Stream has not provided enough data")
     `swapcall`(`name`.unsafeAddr, thedata.addr)
 
-proc genSerialize*(name: NimNode,
-                  size: NimNode): NimNode {.compileTime.} =
+proc genSerialize*(name: NimNode, size: NimNode): NimNode =
   quote do:
     `STREAM_NAME`.writeData(`name`.unsafeAddr, `size`)
 

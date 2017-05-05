@@ -1,6 +1,6 @@
 from sequtils import toSeq, filterIt, mapIt
-from generator import genTypeChunk, correct_sum
-from typesinfo import TypeChunk, Context
+from nesm.generator import genTypeChunk, correct_sum
+from nesm.typesinfo import TypeChunk, Context
 import macros
 
 type

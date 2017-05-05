@@ -1,6 +1,6 @@
 import macros
-from typesinfo import isBasic, estimateBasicSize
-from typesinfo import TypeChunk, Context
+from nesm.typesinfo import isBasic, estimateBasicSize
+from nesm.typesinfo import TypeChunk, Context
 from tables import Table, contains, `[]`, `[]=`, initTable,
                    pairs
 from strutils import `%`
@@ -12,10 +12,10 @@ proc correct_sum*(part_size: NimNode): NimNode {.compileTime.}
 static:
   let STREAM_NAME* = !"thestream"
 
-from objects import genObject
-from basics import genBasic
-from periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
-from enums import genEnum
+from nesm.objects import genObject
+from nesm.basics import genBasic
+from nesm.periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
+from nesm.enums import genEnum
 
 
 proc correct_sum(part_size: NimNode): NimNode =
