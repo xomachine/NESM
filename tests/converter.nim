@@ -11,4 +11,16 @@ suite "Converter tests":
     let pnt = Point2d.deserialize(rnw)
     rnw.setPosition(0)
     pnt.serialize(rnw)
+  test "Object with endian":
+    toSerializable(Point2d, endian: bigEndian)
+    let rnw = get_random_reader_n_writer()
+    let pnt = Point2d.deserialize(rnw)
+    rnw.setPosition(0)
+    pnt.serialize(rnw)
+  test "Static object":
+    toSerializable(Point2d, dynamic: false)
+    let rnw = get_random_reader_n_writer()
+    let pnt = Point2d.deserialize(rnw)
+    rnw.setPosition(0)
+    pnt.serialize(rnw)
 
