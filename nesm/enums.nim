@@ -15,6 +15,8 @@ proc estimateEnumSize(declaration: NimNode): int {.compileTime.} =
       of nnkIntLit, nnkInt8Lit, nnkInt16Lit, nnkInt32Lit, nnkInt64Lit,
          nnkUInt8Lit, nnkUInt16Lit, nnkUInt32Lit, nnkUInt64Lit:
         highest = c[1].intVal.uint64 + 1
+      of nnkPar:
+        highest = c[1][0].intVal.uint64 + 1
       else:
         highest += 1
     of nnkIdent:
