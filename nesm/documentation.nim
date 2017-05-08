@@ -126,6 +126,10 @@
 ##         C = (233, "C is here")
 ##         D = 455
 ##
+## - Sets:
+##     .. code-block:: nim
+##       type CharSet = set[char]
+##
 ## Static types
 ## ------------
 ##
