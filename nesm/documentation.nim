@@ -118,6 +118,14 @@
 ##           else:
 ##             d: seq[uint8]
 ##
+## - Enumerates:
+##     .. code-block:: nim
+##       type Enumerate = enum
+##         A
+##         B = "It's B"
+##         C = (233, "C is here")
+##         D = 455
+##
 ## Static types
 ## ------------
 ##
@@ -217,6 +225,13 @@
 ##   ...
 ##   include oids # Oid's fields are visible only inside the module, so including is necessary
 ##   toSerializable(Oid)
+##
+## Enum correctness checking
+## -------------------------
+## **NESM** is checking enum correctness after deserialization by default.
+## If deserialized value is not one of enum ordinals then the **ValueError**
+## will be raised. To disable such a behaviour user may use the
+## **-d:disableEnumChecks** compiler switch.
 ##
 ## Future ideas
 ## ------------
