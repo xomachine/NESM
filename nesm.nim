@@ -168,12 +168,43 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
       children.add(cleanupTypeDeclaration(c))
   newTree(declaration.kind, children)
 
-macro toSerializable*(typedecl: typed): untyped =
-  ## Generate [de]serialize procedures for existing type
+macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
+  ## Generate [de]serialize procedures for existing type with given settings.
+  ##
+  ## Settings should be supplied in the **key: value, key:value** format.
+  ##
+  ## For example:
+  ##
+  ## .. code-block:: nim
+  ##   toSerializable(TheType, endian: bigEndian, dynamic: false)
+  ##
+  ## Avalible options:
+  ## * **endian** - set the endian of serialized object
+  ## * **dynamic** - if set to 'false' then object treated as **static**
   result = newStmtList()
   when defined(debug):
-    hint(typedecl.symbol.getImpl().repr())
-  let ast = typedecl.symbol.getImpl()
+    hint(typedecl.symbol.getImpl().treeRepr())
+  var ast = typedecl.symbol.getImpl()
+  for arg in settings:
+    arg.expectKind(nnkExprColonExpr)
+    arg.expectMinLen(2)
+    let key = $arg[0]
+    let value = $arg[1]
+    case key
+    of "dynamic":
+      if value == "false":
+        ctx.is_static = true
+    else:
+      let objnodekind = ast.last.last.kind
+      let curlied = newTree(nnkTableConstr, arg)
+      let settings_ast =
+        newTree(nnkIdentDefs, newIdentNode("set"), curlied, newEmptyNode())
+      if objnodekind in {nnkTupleTy, nnkRecList}:
+        ast.last.last.insert(0, settings_ast)
+      elif objnodekind == nnkObjectTy:
+        ast.last.last.last.insert(0, settings_ast)
+      else:
+        warning("Cannot apply option: " & key)
   when defined(debug):
     hint(ast.treeRepr)
   result.add(ctx.prepare(ast))
