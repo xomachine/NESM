@@ -174,17 +174,18 @@
 ## -----------------
 ## There is a way exists to set which endian should be used
 ## while [de]serialization particular structure or part of
-## the structure. A special keyword **set!** allows to set
+## the structure. A special syntax **set: {endian: <value>}** allows to set
 ## the endian for all the fields of structure below until the
-## end or other **set!** keyword. E.g.:
+## end or other **set: {endian: <value>}** will override previous settings.
+## E.g.:
 ##
 ## .. code-block:: nim
 ##   serializable:
 ##     type Ball = object
 ##       weight: float32        # This value will be serialized in *cpuEndian* endian
-##       set! :bigEndian        # The space between set! and :bigEndian is required!
+##       set: {endian: bigEndian}
 ##       diameter: int32        # This value will be serialized in big endian regardless of *cpuEndian*
-##       set! :littleEndian     # Only "bigEndian" and "littleEndian" values allowed
+##       set: {endian: littleEndian}     # Only "bigEndian" and "littleEndian" values allowed
 ##       color: array[3, int16] # Values in this array will be serialized in little endian
 ##
 ## The generated code will use the **swapEndian{16|32|64}()**
