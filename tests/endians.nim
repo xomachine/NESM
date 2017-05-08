@@ -6,20 +6,20 @@ suite "Endianness support":
     serializable:
       type SynTest = object
         a: int32
-        set! :bigEndian
+        set: {endian:bigEndian}
         b: int32
-        set! :littleEndian
+        set: {endian: littleEndian}
         c: int32
 
   test "[de]serialize":
     serializable:
       static:
         type EndianTest = object
-          set! :littleEndian
+          set: {endian: littleEndian}
           a: uint64
           b: uint32
           c: uint16
-          set! :bigEndian
+          set: {endian: bigEndian}
           d: uint64
           e: uint32
           f: uint16
@@ -42,10 +42,10 @@ suite "Endianness support":
     serializable:
       static:
         type SomeArrays = object
-          set! :bigEndian
+          set: {endian: bigEndian}
           data: array[2, int16]
           lilstring: array[3, char]
-          set! :littleEndian
+          set: {endian: littleEndian}
           set: array[2, int16]
 
     let teststring = "\x00\x11\x00\x12hi!\x13\x00\x14\x00"
