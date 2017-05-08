@@ -16,6 +16,7 @@ from nesm.objects import genObject
 from nesm.basics import genBasic
 from nesm.periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
 from nesm.enums import genEnum
+from nesm.sets import genSet
 
 
 proc correct_sum(part_size: NimNode): NimNode =
@@ -87,12 +88,14 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
       result = context.genPeriodic(elemType, sizeproc)
     of "seq":
       if context.is_static:
-        error("Dynamic types not supported in static" &
+        error("Dynamic types are not supported in static" &
               " structures")
       let elem = thetype[1]
       let seqLen = proc (source: NimNode): NimNode =
         (quote do: len(`source`)).last
       result = context.genPeriodic(elem, seqLen)
+    of "set":
+      result = context.genSet(thetype)
     else:
       error("Type $1 is not supported!" % name)
   of nnkTupleTy, nnkRecList:

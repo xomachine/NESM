@@ -2,7 +2,7 @@ import macros
 from nesm.typesinfo import TypeChunk, Context
 from nesm.basics import genBasic
 
-proc estimateEnumSize(declaration: NimNode): int {.compileTime.} =
+proc estimateEnumSize*(declaration: NimNode): int {.compileTime.} =
   var highest: uint64 = 0
   for c in declaration.children():
     case c.kind
