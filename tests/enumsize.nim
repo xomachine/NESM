@@ -3,7 +3,6 @@ include nesm.enums
 
 macro getsize(q:untyped, d: untyped): untyped =
   result = newStmtList()
-  hint d.treeRepr
   let val = estimateEnumSize(d.last.last[2])
   result.add(d)
   let assign = quote do:
