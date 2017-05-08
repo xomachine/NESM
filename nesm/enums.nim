@@ -3,10 +3,6 @@ from nesm.typesinfo import TypeChunk, Context
 from nesm.basics import genBasic
 
 proc estimateEnumSize(declaration: NimNode): int {.compileTime.} =
-  # All code related to size evaluation for enums with negative values is
-  # commented out until the size evaluation mechanism will be clear
-  #var lowest: uint64 = 0
-  #var residue: uint64 = 0
   var highest: uint64 = 0
   for c in declaration.children():
     case c.kind
@@ -16,22 +12,17 @@ proc estimateEnumSize(declaration: NimNode): int {.compileTime.} =
       of nnkPrefix:
         error("Negative values in enums are not supported due to unsertain" &
               " size evaluation mechanism.")
-        #residue = c[1][1].intVal.uint64
-        #if residue > lowest:
-        #  lowest = residue
-        #highest = 0
+      of nnkIntLit, nnkInt8Lit, nnkInt16Lit, nnkInt32Lit, nnkInt64Lit,
+         nnkUInt8Lit, nnkUInt16Lit, nnkUInt32Lit, nnkUInt64Lit:
+        highest = c[1].intVal.uint64 + 1
       else:
-        highest = c[1].intVal.uint64
-        #residue = 0
+        highest += 1
     of nnkIdent:
-      #if residue > 0'u64: residue -= 1
-      #else: highest += 1
       highest += 1
     of nnkEmpty: discard
     else:
-      error("Unexpected AST: " & c.repr)
-  #let maxvalue = (max(lowest, highest) shr 1).int64 + 1
-  let maxvalue = ((highest + 1) shr 1).int64
+      error("Unexpected AST: " & c.treeRepr)
+  let maxvalue = ((highest) shr 1).int64
   case maxvalue
   of 0..int8.high: 1
   of (-int8.low)..int16.high: 2
@@ -44,5 +35,12 @@ proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}=
   let estimated = estimateEnumSize(declaration)
   if estimated == 0: error("Internal error while estimating enum size")
   result = context.genBasic(estimated)
+  when not defined(disableEnumChecks):
+    let olddeser = result.deserialize
+    result.deserialize = proc (source: NimNode): NimNode =
+      let check = quote do:
+        if $(`source`) == $(ord(`source`)) & " (invalid data!)":
+          raise newException(ValueError, "Enum value is out of range!")
+      newTree(nnkStmtList, olddeser(source), check)
 
 
