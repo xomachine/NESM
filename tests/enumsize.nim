@@ -4,7 +4,7 @@ include nesm.enums
 {.hint[XDeclaredButNotUsed]:off.}
 macro getsize(q:untyped, d: untyped): untyped =
   result = newStmtList()
-  let val = estimateEnumSize(d.last.last[2])
+  let val = estimateEnumSize(d.last.last[2].getCount())
   result.add(d)
   let assign = quote do:
     let `q` = `val`

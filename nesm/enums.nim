@@ -2,8 +2,7 @@ import macros
 from nesm.typesinfo import TypeChunk, Context
 from nesm.basics import genBasic
 
-proc estimateEnumSize*(declaration: NimNode): int {.compileTime.} =
-  var highest: uint64 = 0
+proc getCount*(declaration: NimNode): uint64 {.compileTime.} =
   for c in declaration.children():
     case c.kind
     of nnkEnumFieldDef:
@@ -14,16 +13,18 @@ proc estimateEnumSize*(declaration: NimNode): int {.compileTime.} =
               " size evaluation mechanism.")
       of nnkIntLit, nnkInt8Lit, nnkInt16Lit, nnkInt32Lit, nnkInt64Lit,
          nnkUInt8Lit, nnkUInt16Lit, nnkUInt32Lit, nnkUInt64Lit:
-        highest = c[1].intVal.uint64 + 1
+        result = c[1].intVal.uint64 + 1
       of nnkPar:
-        highest = c[1][0].intVal.uint64 + 1
+        result = c[1][0].intVal.uint64 + 1
       else:
-        highest += 1
+        result += 1
     of nnkIdent:
-      highest += 1
+      result += 1
     of nnkEmpty: discard
     else:
       error("Unexpected AST: " & c.treeRepr)
+
+proc estimateEnumSize(highest: uint64): int {.compileTime.} =
   let maxvalue = ((highest) shr 1).int64
   case maxvalue
   of 0..int8.high: 1
@@ -34,7 +35,8 @@ proc estimateEnumSize*(declaration: NimNode): int {.compileTime.} =
 
 
 proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}=
-  let estimated = estimateEnumSize(declaration)
+  let count = getCount(declaration)
+  let estimated = estimateEnumSize(count)
   if estimated == 0: error("Internal error while estimating enum size")
   result = context.genBasic(estimated)
   when not defined(disableEnumChecks):
