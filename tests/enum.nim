@@ -22,5 +22,21 @@ suite "Enumerates":
     rnw.setPosition(0)
     let da = SimpleEnum.deserialize(rnw)
     check(a == da)
-
+  test "Nesting":
+    # This test might fail due to uncertancy in the enum correctness checking
+    # necesity, so it should be fixed as soon as the correctness checking
+    # will be introduced
+    serializable:
+      static:
+        type NestedEnum {.pure.} = enum
+          A = 5
+          B
+        type TypeWithEnum = object
+          b: int32
+          a: NestedEnum
+          c: int32
+    let rnw = get_random_reader_n_writer()
+    let da = TypeWithEnum.deserialize(rnw)
+    rnw.setPosition(0)
+    da.serialize(rnw)
 
