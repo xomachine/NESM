@@ -69,4 +69,27 @@ suite "Enumerates":
     check(a.a == da.a)
     check(a.b == da.b)
     check(a.c == da.c)
+  test "Cases":
+    serializable:
+      static:
+        type CEnum = enum
+          A, B
+        type CType = object
+          case kind: CEnum
+          of A:
+            a: int32
+          of B:
+            b: int16
+    let rnw = get_reader_n_writer()
+    let o = CType(kind:CEnum.A, a:random(10000).int32)
+    let oo = CType(kind:CEnum.B, b:random(1000).int16)
+    o.serialize(rnw)
+    oo.serialize(rnw)
+    rnw.setPosition(0)
+    let dso = CType.deserialize(rnw)
+    let dsoo = CType.deserialize(rnw)
+    check(o.kind == dso.kind)
+    check(oo.kind == dsoo.kind)
+    check(o.a == dso.a)
+    check(oo.b == dsoo.b)
 
