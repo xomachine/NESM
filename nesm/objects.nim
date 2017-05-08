@@ -1,4 +1,5 @@
 from sequtils import toSeq, filterIt, mapIt
+from strutils import cmpIgnoreStyle
 from nesm.generator import genTypeChunk, correct_sum
 from nesm.typesinfo import TypeChunk, Context
 import macros
@@ -38,7 +39,7 @@ proc caseWorkaround(tc: TypeChunk): TypeChunk =
 proc genObject(context: Context, thetype: NimNode): TypeChunk =
   var elems = newSeq[Field]()
   var newContext = context
-  let settingsKeyword = newIdentNode("set").postfix("!")
+  let settingsKeyword = newIdentNode("set")
   for declaration in thetype.children():
     case declaration.kind
     of nnkNilLit:
@@ -58,21 +59,24 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
       elems.add(("", casechunk))
     of nnkIdentDefs:
       declaration.expectMinLen(2)
-      if declaration[0] == settingsKeyword:
-        let command = declaration[1]
-        case command.kind
-        of nnkIdent:
-          let strcommand = $command
-          if strcommand in ["bigEndian", "littleEndian"]:
-            newContext.swapEndian = strcommand != $cpuEndian
+      if declaration[0] == settingsKeyword and
+         declaration[1].kind == nnkTableConstr:
+        # The set: {key:value} syntax encountered
+        let paramslist = declaration[1]
+        for param in paramslist.children():
+          param.expectKind(nnkExprColonExpr)
+          param.expectMinLen(2)
+          let key = param[0].repr
+          let val = param[1].repr
+          case key
+          of "endian":
+            newContext.swapEndian = cmpIgnoreStyle(val, $cpuEndian) != 0
           else:
-            error("Unknown setting: " & strcommand)
-        else:
-          error("Unknown setting: " & $command.repr)
-        continue
-      let fchunk = newContext.genFields(declaration)
-      elems &= fchunk.entries
-      result.has_hidden = result.has_hidden or fchunk.has_hidden
+            error("Unknown setting: " & key)
+      else:
+        let fchunk = newContext.genFields(declaration)
+        elems &= fchunk.entries
+        result.has_hidden = result.has_hidden or fchunk.has_hidden
     else:
       error("Unknown AST: \n" & declaration.repr & "\n" & declaration.treeRepr)
   if thetype.kind == nnkTupleTy:

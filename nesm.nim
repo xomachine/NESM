@@ -145,7 +145,7 @@ when not defined(nimdoc):
 
 proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
   var children = newSeq[NimNode]()
-  let settingsKeyword = newIdentNode("set").postfix("!")
+  let settingsKeyword = newIdentNode("set")
   if declaration.len == 0:
     return declaration
   for c in declaration.children():
@@ -159,7 +159,8 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
         copyChildrenTo(c, newID)
         newID[^2] = newIdentNode("string")
         children.add(newID)
-      elif c[0] == settingsKeyword:
+      elif c.len == 3 and c[0] == settingsKeyword and
+           c[1].kind == nnkTableConstr:
         continue
       else:
         children.add(c)
