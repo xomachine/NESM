@@ -5,6 +5,8 @@ import helpers.rnw
 import unittest
 from macros import hint
 
+{.hint[XDeclaredButNotUsed]:off.}
+
 suite "Enumerates":
   test "Simple enum":
     serializable:
