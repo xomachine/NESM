@@ -138,7 +138,7 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
         cast[type(`r`)](`tmp`)
   else:
     discard
-    error("Unexpected AST")
+    error("Unexpected AST: " & thetype.treeRepr)
   result.dynamic = not context.is_static
 
 
