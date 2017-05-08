@@ -39,6 +39,8 @@ proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}=
   let estimated = estimateEnumSize(count)
   if estimated == 0: error("Internal error while estimating enum size")
   result = context.genBasic(estimated)
+  result.nodekind = nnkEnumTy
+  result.maxcount = count
   when not defined(disableEnumChecks):
     let olddeser = result.deserialize
     result.deserialize = proc (source: NimNode): NimNode =
@@ -46,5 +48,4 @@ proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}=
         if $(`source`) == $(ord(`source`)) & " (invalid data!)":
           raise newException(ValueError, "Enum value is out of range!")
       newTree(nnkStmtList, olddeser(source), check)
-
 

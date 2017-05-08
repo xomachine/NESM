@@ -1,5 +1,6 @@
 
 from macros import error, warning
+from macros import NimNodeKind, nnkEnumTy
 from tables import Table
 
 const basic_types = [
@@ -14,6 +15,10 @@ type
     deserialize*: proc(source: NimNode): NimNode
     dynamic*: bool
     has_hidden*: bool
+    case nodekind*: NimNodeKind
+    of nnkEnumTy:
+      maxcount*: uint64
+    else: discard
 
   Context* = object
     declared*: Table[string, TypeChunk]
