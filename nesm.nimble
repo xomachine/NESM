@@ -1,5 +1,5 @@
 
-version       = "0.3.0"
+version       = "0.3.1"
 author        = "xomachine (Fomichev Dmitriy)"
 description   = "NESM stands for Nim's Easy Serialization Macro. The macro allowing generation of serialization functions by one line of code!"
 license       = "MIT"
