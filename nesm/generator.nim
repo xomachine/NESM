@@ -53,11 +53,15 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
           " imported module or sharing " & plaintype & "'s" &
           " fields via '*' postfix")
       return context.declared[plaintype]
-    elif thetype.repr == "string" and not context.is_static:
+    elif thetype.repr == "string":
+      if context.is_static:
+        error("Strings are not allowed in static context")
       let len_proc = proc (s: NimNode):NimNode =
         (quote do: len(`s`)).last
       result = context.genPeriodic(newEmptyNode(), len_proc)
-    elif thetype.repr == "cstring" and not context.is_static:
+    elif thetype.repr == "cstring":
+      if context.is_static:
+        error("CStrings are not allowed in static context")
       result.serialize = proc (s: NimNode): NimNode =
         genCStringSerialize(s)
       result.deserialize = proc (s: NimNode): NimNode =
