@@ -194,6 +194,11 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
     of "dynamic":
       if value == "false":
         ctx.is_static = true
+      elif value == "true":
+        ctx.is_static = false
+      else:
+        error("'dynamic' property can be only 'true' or 'false', but not: " &
+              value)
     else:
       let objnodekind = ast.last.last.kind
       let curlied = newTree(nnkTableConstr, arg)
@@ -208,6 +213,7 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   when defined(debug):
     hint(ast.treeRepr)
   result.add(ctx.prepare(ast))
+  ctx.is_static = false
 
 macro serializable*(typedecl: untyped): untyped =
   ## The main macro that generates code.
