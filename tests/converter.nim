@@ -33,10 +33,9 @@ suite "Converter tests":
   test "Endians at aliases":
     type AInt = int32
     toSerializable(AInt, endian: bigEndian)
-    let a = random(1..1000).AInt
-    let rnw = get_reader_n_writer()
-    a.serialize(rnw)
+    let rnw = get_random_reader_n_writer()
+    let a = AInt.deserialize(rnw)
     var b = 0.AInt
-    swapEndian32(b.addr, rnw.buffer[0].addr)
+    bigEndian32(b.addr, rnw.buffer[0].addr)
     check(b == a)
 
