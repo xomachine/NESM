@@ -199,21 +199,16 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
       else:
         error("'dynamic' property can be only 'true' or 'false', but not: " &
               value)
+    of "endian":
+      if value != $cpuEndian:
+        ctx.swapEndian = true
     else:
-      let objnodekind = ast.last.last.kind
-      let curlied = newTree(nnkTableConstr, arg)
-      let settings_ast =
-        newTree(nnkIdentDefs, newIdentNode("set"), curlied, newEmptyNode())
-      if objnodekind in {nnkTupleTy, nnkRecList}:
-        ast.last.last.insert(0, settings_ast)
-      elif objnodekind == nnkObjectTy:
-        ast.last.last.last.insert(0, settings_ast)
-      else:
-        warning("Cannot apply option: " & key)
+      error("Unknown property: " & key)
   when defined(debug):
     hint(ast.treeRepr)
   result.add(ctx.prepare(ast))
   ctx.is_static = false
+  ctx.swapEndian = false
 
 macro serializable*(typedecl: untyped): untyped =
   ## The main macro that generates code.
