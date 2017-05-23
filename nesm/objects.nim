@@ -13,12 +13,12 @@ type
     has_hidden: bool
 
 proc genObject*(context: Context, thetype: NimNode): TypeChunk {.compileTime.}
+proc applyOptions*(context: Context,
+                   options: NimNode | seq[NimNode]): Context {.compileTime.}
 proc genCase(context: Context, decl: NimNode): TypeChunk {.compileTime.}
 proc caseWorkaround(tc: TypeChunk): TypeChunk {.compileTime.}
 proc evalSize(e: NimNode): BiggestInt {.compileTime.}
 proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
-proc applyOptions(context: Context,
-                  options: NimNode | seq[NimNode]): Context {.compileTime.}
 
 proc caseWorkaround(tc: TypeChunk): TypeChunk =
   # st - type of field under case
@@ -48,6 +48,15 @@ proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
     case key
     of "endian":
       result.swapEndian = cmpIgnoreStyle(val, $cpuEndian) != 0
+    of "dynamic":
+      let code = int(cmpIgnoreStyle(val, "true") == 0) +
+                 2*int(cmpIgnoreStyle(val, "false") == 0)
+      case code
+      of 0: error("The dynamic property can be only 'true' or 'false' but not" &
+                  val)
+      of 1: result.is_static = true
+      of 2: result.is_static = false
+      else: error("Unexpected error! dynamic is in superposition! WTF?")
     else:
       error("Unknown setting: " & key)
 

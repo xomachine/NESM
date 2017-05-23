@@ -10,6 +10,7 @@ from streams import Stream, newStringStream
 when not defined(nimdoc):
   from nesm.typesinfo import TypeChunk, Context
   from nesm.generator import genTypeChunk, STREAM_NAME
+  from nesm.objects import applyOptions
 else:
   import endians
   type TypeChunk = object
@@ -194,25 +195,7 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   when defined(debug):
     hint(typedecl.symbol.getImpl().treeRepr())
   var ast = typedecl.symbol.getImpl()
-  for arg in settings:
-    arg.expectKind(nnkExprColonExpr)
-    arg.expectMinLen(2)
-    let key = $arg[0]
-    let value = $arg[1]
-    case key
-    of "dynamic":
-      if value == "false":
-        ctx.is_static = true
-      elif value == "true":
-        ctx.is_static = false
-      else:
-        error("'dynamic' property can be only 'true' or 'false', but not: " &
-              value)
-    of "endian":
-      if value != $cpuEndian:
-        ctx.swapEndian = true
-    else:
-      error("Unknown property: " & key)
+  ctx = ctx.applyOptions(settings)
   when defined(debug):
     hint(ast.treeRepr)
   result.add(ctx.prepare(ast))
