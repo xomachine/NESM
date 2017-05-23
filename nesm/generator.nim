@@ -30,9 +30,15 @@ proc dig_root(source: NimNode): NimNode =
   case source.kind
   of nnkIdent, nnkSym, nnkEmpty:
     source
-  else:
+  of nnkDotExpr:
     source.expectMinLen(1)
     source[0].dig_root()
+  of nnkCall:
+    source.expectMinLen(2)
+    source[1].dig_root()
+  else:
+    error("Unknown symbol: " & source.treeRepr)
+    newEmptyNode()
 
 proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
   result.has_hidden = false
