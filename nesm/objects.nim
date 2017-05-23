@@ -136,7 +136,11 @@ proc genFields(context: Context, decl: NimNode): FieldChunk =
     if decl[^1].kind == nnkEmpty: decl.len - 2
     else: decl.len - 1
   let subtype = decl[last]
-  let chunk = context.genTypeChunk(subtype)
+  let chunk =
+    if subtype.kind == nnkCurlyExpr:
+      context.applyOptions(toSeq(subtype.children)[1..<subtype.len])
+             .genTypeChunk(subtype[0])
+    else: context.genTypeChunk(subtype)
   for i in 0..<last:
     if decl[i].kind != nnkPostfix:
       result.has_hidden = true

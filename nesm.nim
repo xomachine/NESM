@@ -154,10 +154,19 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
       for cc in c.children():
         children.add(cleanupTypeDeclaration(cc))
     of nnkIdentDefs:
-      if c[^2].repr == "cstring":
+      let last = if c[^1].kind == nnkEmpty: c.len - 2 else: c.len - 1
+      if c[last].kind == nnkCurlyExpr:
+        # newID need to be a NimNode that contains IdentDefs node
+        # to utilze recursive call of cleanupTypeDeclaration
+        var newID = newTree(nnkStmtList, newNimNode(nnkIdentDefs))
+        copyChildrenTo(c, newID[0])
+        # first element of CurlyExpr is an actual type
+        newID[0][last] = c[last][0]
+        children.add(newID.cleanupTypeDeclaration()[0])
+      elif c[last].repr == "cstring":
         var newID = newNimNode(nnkIdentDefs)
         copyChildrenTo(c, newID)
-        newID[^2] = newIdentNode("string")
+        newID[last] = newIdentNode("string")
         children.add(newID)
       elif c.len == 3 and c[0] == settingsKeyword and
            c[1].kind == nnkTableConstr:
