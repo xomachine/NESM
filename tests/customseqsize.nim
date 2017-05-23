@@ -71,7 +71,7 @@ suite "Custom periodic size":
     require(dso.data.len == o.data.len)
     require(dso.s == o.s)
     check(dso.a == o.a)
-    for i in 0..<o.size:
+    for i in 0..<o.s:
       check(o.data[i] == dso.data[i])
 
   test "Matrix":
@@ -79,7 +79,7 @@ suite "Custom periodic size":
       type Matrix = object
         lines: int32
         columns: int32
-        data: seq[seq[int32]] {size: lines, size: colomns}
+        data: seq[seq[int32]] {size: lines, size: columns}
 
     let rnw = get_reader_n_writer()
     var o: Matrix
@@ -96,7 +96,7 @@ suite "Custom periodic size":
     require(o.size() == dso.size())
     require(o.data.len == dso.data.len)
     require(o.lines == dso.lines)
-    require(o.colomns == dso.colomns)
+    require(o.columns == dso.columns)
     for i in 0..<o.lines:
-      for j in 0..<o.colomns:
+      for j in 0..<o.columns:
         check(o.data[i][j] == dso.data[i][j])
