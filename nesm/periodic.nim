@@ -66,7 +66,7 @@ proc genPeriodic*(context: Context, elem: NimNode,
       let periodic_len = length(s)
       let newsource = (quote do: `s`[`index_letter`]).last
       let chunk_size = one_chunk.size(newsource)
-      if is_array and chunk_size.kind != nnkStmtList:
+      if is_array and periodic_len == lenvarname:
         periodic_len.infix("*", chunk_size)
       else:
         let chunk_expr = correct_sum(chunk_size)
@@ -81,10 +81,11 @@ proc genPeriodic*(context: Context, elem: NimNode,
         for `index_letter` in 0..<(`periodic_len`):
           `chunk_expr`
     result.deserialize = proc(s: NimNode): NimNode =
+      let lens = length(s)
       let newsource = (quote do: `s`[`index_letter`]).last
       let chunk_expr = onechunk.deserialize(newsource)
       quote do:
-        for `index_letter` in 0..<(`lenvarname`):
+        for `index_letter` in 0..<(`lens`):
           `chunk_expr`
   if not is_array:
     let size_header_chunk = context.genTypeChunk(
