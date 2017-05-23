@@ -100,3 +100,27 @@ suite "Custom periodic size":
     for i in 0..<o.lines:
       for j in 0..<o.columns:
         check(o.data[i][j] == dso.data[i][j])
+
+  test "Nesting":
+    serializable:
+      type Nested = object
+        dsize: int32
+        a: int32
+        data: seq[int32] {size: dsize}
+      type Nester = object
+        a: Nested
+
+    let rnw = get_random_reader_n_writer()
+    var o: Nester
+    o.a.data = random_seq_with(random(20000).int32)
+    o.a.dsize = o.a.data.len.int32
+    o.a.a = random(20000).int32
+    o.a.serialize(rnw)
+    rnw.setPosition(0)
+    let dso = Nester.deserialize(rnw)
+    require(size(o) == size(dso))
+    check(o.a.a == dso.a.a)
+    require(o.a.dsize == dso.a.dsize)
+    require(o.a.data.len == dso.a.data.len)
+    for i in 0..<o.a.dsize:
+      check(o.a.data[i] == dso.a.data[i])
