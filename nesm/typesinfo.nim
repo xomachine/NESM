@@ -1,6 +1,6 @@
 
 from macros import error, warning
-from macros import NimNodeKind, nnkEnumTy
+from macros import NimNodeKind, nnkEnumTy, NimIdent
 from tables import Table
 
 const basic_types = [
@@ -22,6 +22,7 @@ type
 
   Context* = object
     declared*: Table[string, TypeChunk]
+    size_override*: seq[NimIdent]
     is_static*: bool
     swapEndian*: bool
 

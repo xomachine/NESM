@@ -26,6 +26,14 @@ proc correct_sum(part_size: NimNode): NimNode =
   else:
     result_node.infix("+=", part_size)
 
+proc dig_root(source: NimNode): NimNode =
+  case source.kind
+  of nnkIdent, nnkSym, nnkEmpty:
+    source
+  else:
+    source.expectMinLen(1)
+    source[0].dig_root()
+
 proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
   result.has_hidden = false
   result.nodekind = thetype.kind
@@ -56,9 +64,24 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
     elif thetype.repr == "string":
       if context.is_static:
         error("Strings are not allowed in static context")
-      let len_proc = proc (s: NimNode):NimNode =
-        (quote do: len(`s`)).last
-      result = context.genPeriodic(newEmptyNode(), len_proc)
+      assert(context.size_override.len in 0..1, "To many 'size' options")
+      if context.size_override.len > 0:
+        let last = context.size_override[0]
+        let len_proc = proc (s: NimNode): NimNode =
+          let origin = s.dig_root()
+          (quote do: `origin`.`last`).last
+        result = context.genPeriodic(newEmptyNode(), len_proc)
+        let olddeser = result.deserialize
+        result.deserialize = proc (s: NimNode): NimNode =
+          let origin = s.dig_root()
+          let deser = olddeser(s)
+          quote do:
+            `s` = newString(`origin`.`last`)
+            `deser`
+      else:
+        let len_proc = proc (s: NimNode): NimNode =
+            (quote do: len(`s`)).last
+        result = context.genPeriodic(newEmptyNode(), len_proc)
     elif thetype.repr == "cstring":
       if context.is_static:
         error("CStrings are not allowed in static context")
@@ -96,9 +119,24 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
         error("Dynamic types are not supported in static" &
               " structures")
       let elem = thetype[1]
-      let seqLen = proc (source: NimNode): NimNode =
-        (quote do: len(`source`)).last
-      result = context.genPeriodic(elem, seqLen)
+      var subcontext = context
+      if context.size_override.len > 0:
+        let last = subcontext.size_override.pop()
+        let seqLen = proc (s: NimNode): NimNode =
+          let origin = s.dig_root()
+          (quote do: `origin`.`last`).last
+        result = subcontext.genPeriodic(elem, seqLen)
+        let olddeser = result.deserialize
+        result.deserialize = proc (s: NimNode): NimNode =
+          let origin = s.dig_root()
+          let deser = olddeser(s)
+          quote do:
+            `s` = newSeq[`elem`](`origin`.`last`)
+            `deser`
+      else:
+        let seqLen = proc (source: NimNode): NimNode =
+          (quote do: len(`source`)).last
+        result = subcontext.genPeriodic(elem, seqLen)
     of "set":
       result = context.genSet(thetype)
     else:

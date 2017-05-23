@@ -78,6 +78,7 @@ when not defined(nimdoc):
   static:
     var ctx: Context
     ctx.declared = initTable[string, TypeChunk]()
+    ctx.size_override = newSeq[NimIdent]()
   proc generateProc(pattern: string, name: string,
                     sign: string,
                     body: NimNode = newEmptyNode()): NimNode =

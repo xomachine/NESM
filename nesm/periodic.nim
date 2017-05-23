@@ -50,11 +50,12 @@ proc genPeriodic*(context: Context, elem: NimNode,
       quote do:
         if `lens` > 0: `serialization`
     result.deserialize = proc (s: NimNode): NimNode =
-      let size = (quote do: `lenvarname` * `eSize`).last
+      let lens = length(s)
+      let size = (quote do: `lens` * `eSize`).last
       let newsource = (quote do: `s`[0]).last
       let deserialization = genDeserialize(newsource, size)
       quote do:
-        if `lenvarname` > 0: `deserialization`
+        if `lens` > 0: `deserialization`
     result.dynamic = not context.is_static
     result.has_hidden = false
   else:
