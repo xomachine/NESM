@@ -17,6 +17,8 @@ proc genCase(context: Context, decl: NimNode): TypeChunk {.compileTime.}
 proc caseWorkaround(tc: TypeChunk): TypeChunk {.compileTime.}
 proc evalSize(e: NimNode): BiggestInt {.compileTime.}
 proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
+proc applyOptions(context: Context,
+                  options: NimNode | seq[NimNode]): Context {.compileTime.}
 
 proc caseWorkaround(tc: TypeChunk): TypeChunk =
   # st - type of field under case
@@ -35,6 +37,19 @@ proc caseWorkaround(tc: TypeChunk): TypeChunk =
       var `tmpvar`: type(`s`)
       `ods`
       `s` = `tmpvar`
+
+proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
+  result = context
+  for option in options.items():
+    option.expectKind(nnkExprColonExpr)
+    option.expectMinLen(2)
+    let key = option[0].repr
+    let val = option[1].repr
+    case key
+    of "endian":
+      result.swapEndian = cmpIgnoreStyle(val, $cpuEndian) != 0
+    else:
+      error("Unknown setting: " & key)
 
 proc genObject(context: Context, thetype: NimNode): TypeChunk =
   var elems = newSeq[Field]()
@@ -63,16 +78,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
          declaration[1].kind == nnkTableConstr:
         # The set: {key:value} syntax encountered
         let paramslist = declaration[1]
-        for param in paramslist.children():
-          param.expectKind(nnkExprColonExpr)
-          param.expectMinLen(2)
-          let key = param[0].repr
-          let val = param[1].repr
-          case key
-          of "endian":
-            newContext.swapEndian = cmpIgnoreStyle(val, $cpuEndian) != 0
-          else:
-            error("Unknown setting: " & key)
+        newContext = newContext.applyOptions(paramslist)
       else:
         let fchunk = newContext.genFields(declaration)
         elems &= fchunk.entries
