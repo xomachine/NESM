@@ -20,7 +20,13 @@ proc genCStringSerialize*(name: NimNode): NimNode {.compileTime.} =
                             `name`.len)
     `STREAM_NAME`.write('\x00')
 
-
+proc findInChilds(a, b: NimNode): bool =
+  if a == b: return true
+  else:
+    for ac in a.children():
+      if ac.findInChilds(b):
+        return true
+    return false
 
 proc genPeriodic*(context: Context, elem: NimNode,
                   length: proc (s:NimNode): NimNode,
@@ -66,7 +72,7 @@ proc genPeriodic*(context: Context, elem: NimNode,
       let periodic_len = length(s)
       let newsource = (quote do: `s`[`index_letter`]).last
       let chunk_size = one_chunk.size(newsource)
-      if is_array and periodic_len == lenvarname:
+      if not chunk_size.findInChilds(index_letter):
         periodic_len.infix("*", chunk_size)
       else:
         let chunk_expr = correct_sum(chunk_size)
