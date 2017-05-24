@@ -12,7 +12,7 @@ suite "Custom periodic size":
         MySeq = object
           size: int32
           a: int32
-          data: seq[int32] {size: size}
+          data: seq[int32] {size: {}.size}
  
     let rnw = get_reader_n_writer()
     var o: MySeq
@@ -35,7 +35,7 @@ suite "Custom periodic size":
         MyString = object
           size: int32
           a: int32
-          data: string {size: size}
+          data: string {size: {}.size}
  
     let rnw = get_reader_n_writer()
     var o: MyString
@@ -57,7 +57,7 @@ suite "Custom periodic size":
       type MySeqStr = object
         s: int32
         a: int32
-        data: seq[string] {size: s}
+        data: seq[string] {size: {}.s}
 
     let rnw = get_reader_n_writer()
     var o: MySeqStr
@@ -79,7 +79,7 @@ suite "Custom periodic size":
       type Matrix = object
         lines: int32
         columns: int32
-        data: seq[seq[int32]] {size: lines, size: columns}
+        data: seq[seq[int32]] {size: {}.lines, size: {}.columns}
 
     let rnw = get_reader_n_writer()
     var o: Matrix
@@ -106,7 +106,7 @@ suite "Custom periodic size":
       type Nested = object
         dsize: int32
         a: int32
-        data: seq[int32] {size: dsize}
+        data: seq[int32] {size: {}.dsize}
       type Nester = object
         a: Nested
 
