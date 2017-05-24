@@ -110,12 +110,12 @@ suite "Custom periodic size":
       type Nester = object
         a: Nested
 
-    let rnw = get_random_reader_n_writer()
+    let rnw = get_reader_n_writer()
     var o: Nester
     o.a.data = random_seq_with(random(20000).int32)
     o.a.dsize = o.a.data.len.int32
     o.a.a = random(20000).int32
-    o.a.serialize(rnw)
+    o.serialize(rnw)
     rnw.setPosition(0)
     let dso = Nester.deserialize(rnw)
     require(size(o) == size(dso))
