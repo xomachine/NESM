@@ -4,11 +4,11 @@ when defined(js):
 import macros
 from strutils import `%`
 from sequtils import toSeq
-from tables import Table, initTable, contains, `[]`, `[]=`
+from tables import contains, `[]`, `[]=`
 from streams import Stream, newStringStream
 
 when not defined(nimdoc):
-  from nesm.typesinfo import TypeChunk, Context
+  from nesm.typesinfo import TypeChunk, Context, initContext
   from nesm.generator import genTypeChunk, STREAM_NAME
   from nesm.objects import applyOptions
 else:
@@ -76,9 +76,7 @@ const SIZE_DECLARATION = "proc size$1(" &
 
 when not defined(nimdoc):
   static:
-    var ctx: Context
-    ctx.declared = initTable[string, TypeChunk]()
-    ctx.size_override = newSeq[NimIdent]()
+    var ctx = initContext()
   proc generateProc(pattern: string, name: string,
                     sign: string,
                     body: NimNode = newEmptyNode()): NimNode =

@@ -6,7 +6,8 @@ from tables import Table, contains, `[]`, `[]=`, initTable,
 from strutils import `%`
 from sequtils import mapIt, foldl, toSeq, filterIt
 
-proc genTypeChunk*(context: Context, thetype: NimNode): TypeChunk {.compileTime.}
+proc genTypeChunk*(immutableContext: Context,
+                   thetype: NimNode): TypeChunk {.compileTime.}
 proc correct_sum*(part_size: NimNode): NimNode {.compileTime.}
 
 static:
@@ -26,21 +27,45 @@ proc correct_sum(part_size: NimNode): NimNode =
   else:
     result_node.infix("+=", part_size)
 
-proc dig_root(source: NimNode): NimNode =
-  case source.kind
-  of nnkIdent, nnkSym, nnkEmpty:
-    source
+proc dig(node: NimNode, depth: Natural): NimNode {.compileTime.} =
+  if depth == 0:
+    return node
+  case node.kind
   of nnkDotExpr:
-    source.expectMinLen(1)
-    source[0].dig_root()
+    node.expectMinLen(1)
+    node[0].dig(depth - 1)
   of nnkCall:
-    source.expectMinLen(2)
-    source[1].dig_root()
+    node.expectMinLen(2)
+    node[1].dig(depth - 1)
+  of nnkEmpty:
+    node
+  of nnkIdent, nnkSym:
+    error("Too big depth to dig: " & $depth)
+    newEmptyNode()
   else:
-    error("Unknown symbol: " & source.treeRepr)
+    error("Unknown symbol: " & node.treeRepr)
     newEmptyNode()
 
-proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
+proc insert_source(length_declaration, source: NimNode,
+                   depth: Natural): NimNode  =
+  if length_declaration.kind == nnkCurly:
+    if length_declaration.len == 1 and length_declaration[0].kind == nnkCurly:
+      return length_declaration[0].insert_source(source, depth + 1)
+    elif length_declaration.len == 0:
+      return source.dig(depth)
+  if length_declaration.len == 0:
+    return length_declaration
+  else:
+    result = newNimNode(length_declaration.kind)
+    for child in length_declaration.children():
+      result.add(child.insert_source(source, depth))
+
+proc incrementDepth(ctx: Context): Context {.compileTime.} =
+  result = ctx
+  result.depth += 1
+
+proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
+  let context = immutableContext.incrementDepth()
   result.has_hidden = false
   result.nodekind = thetype.kind
   case thetype.kind
@@ -72,17 +97,18 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
         error("Strings are not allowed in static context")
       assert(context.size_override.len in 0..1, "To many 'size' options")
       if context.size_override.len > 0:
-        let last = context.size_override[0]
+        let capture = context.size_override[0]
+        let size = capture.size
+        let relative_depth = context.depth - capture.depth
         let len_proc = proc (s: NimNode): NimNode =
-          let origin = s.dig_root()
-          (quote do: `origin`.`last`).last
+          size.insert_source(s, relative_depth)
         result = context.genPeriodic(newEmptyNode(), len_proc)
         let olddeser = result.deserialize
         result.deserialize = proc (s: NimNode): NimNode =
-          let origin = s.dig_root()
+          let origin = size.insert_source(s, relative_depth)
           let deser = olddeser(s)
           quote do:
-            `s` = newString(`origin`.`last`)
+            `s` = newString(`origin`)
             `deser`
       else:
         let len_proc = proc (s: NimNode): NimNode =
@@ -125,24 +151,25 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
         error("Dynamic types are not supported in static" &
               " structures")
       let elem = thetype[1]
-      var subcontext = context
       if context.size_override.len > 0:
-        let last = subcontext.size_override.pop()
+        var subcontext = context
+        let capture = subcontext.size_override.pop()
+        let size = capture.size
+        let relative_depth = context.depth - capture.depth
         let seqLen = proc (s: NimNode): NimNode =
-          let origin = s.dig_root()
-          (quote do: `origin`.`last`).last
+          size.insert_source(s, relative_depth)
         result = subcontext.genPeriodic(elem, seqLen)
         let olddeser = result.deserialize
         result.deserialize = proc (s: NimNode): NimNode =
-          let origin = s.dig_root()
+          let origin = size.insert_source(s, relative_depth)
           let deser = olddeser(s)
           quote do:
-            `s` = newSeq[`elem`](`origin`.`last`)
+            `s` = newSeq[`elem`](`origin`)
             `deser`
       else:
         let seqLen = proc (source: NimNode): NimNode =
           (quote do: len(`source`)).last
-        result = subcontext.genPeriodic(elem, seqLen)
+        result = context.genPeriodic(elem, seqLen)
     of "set":
       result = context.genSet(thetype)
     else:

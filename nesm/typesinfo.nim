@@ -1,7 +1,7 @@
 
 from macros import error, warning
 from macros import NimNodeKind, nnkEnumTy, NimIdent
-from tables import Table
+from tables import Table, initTable
 
 const basic_types = [
   "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
@@ -20,11 +20,23 @@ type
       maxcount*: uint64
     else: discard
 
+  SizeCapture* = tuple
+    size: NimNode
+    depth: Natural
+
   Context* = object
     declared*: Table[string, TypeChunk]
-    size_override*: seq[NimIdent]
+    size_override*: seq[SizeCapture]
+    depth*: Natural
     is_static*: bool
     swapEndian*: bool
+
+proc initContext*(): Context =
+  result.size_override = newSeq[SizeCapture]()
+  result.declared = initTable[string, TypeChunk]()
+  result.depth = 0
+  result.is_static = false
+  result.swapEndian = false
 
 proc isBasic*(thetype: string): bool =
   thetype in basic_types
