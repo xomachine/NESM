@@ -174,13 +174,46 @@
 ##     let ss142004 = newStringStream(cast[string](data))
 ##     deserialize(type(result), ss142004)
 ##
+## Serialization options
+## ---------------------
+## The serialization process can be controlled via the special syntax
+## **{<key>: <value>, <key>: <value>,...}**. There are three ways of
+## using this syntax:
+##
+## * From invocation to the end of object or another invocation
+##
+##   .. code-block:: nim
+##     serializable:
+##       type MyType = object
+##         set: {<options>}
+##         ... # all fields until the end of object will be affected
+##         ... # another set: {<options>} can override previous one
+##
+## * For converted structure
+##
+##   .. code-block:: nim
+##     toSerializable(TheType, <options>)
+##     # NOTE: curly braces are not required here
+##
+## * For particular field (inline)
+##
+##   .. code-block:: nim
+##     serializable:
+##       type MyType = object
+##         typical_field: string
+##         field_with_special_rules: int32 {<options>} # inline options
+##         # NOTE: inline options have highest priority
+##         another_typical_field: float32
+##
+## The serialization options themself are described in the paragraphs they are
+## related.
+##
 ## Endianness switching
 ## -----------------
 ## There is a way exists to set which endian should be used
 ## while [de]serialization particular structure or part of
-## the structure. A special syntax **set: {endian: <value>}** allows to set
-## the endian for all the fields of structure below until the
-## end or other **set: {endian: <value>}** will override previous settings.
+## the structure. A special keyword **endian** in serialization options
+## allows to set the endian.
 ## E.g.:
 ##
 ## .. code-block:: nim
