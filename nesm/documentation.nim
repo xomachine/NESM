@@ -228,23 +228,6 @@
 ## The generated code will use the **swapEndian{16|32|64}()**
 ## calls from the endians module to change endianness.
 ##
-## Usage of int, float, uint types without size specifier
-## ------------------------------------------------------
-## By default the serializable macro throws an error when the type
-## under the macro contains basic type description without size specification.
-## For example, the following code will cause an error:
-##
-## .. code-block:: nim
-##   serializable:
-##     type MyInt = distinct int
-##
-## To avoid this behaviour one can tell the macro to allow all basic type
-## description without size specification
-## by using **-d:allow_undefined_type_size** compiler switch.
-## You must avoid to use this switch as far as possible because when
-## the switch enabled the library can not guarantee proper deserialization
-## of objects on devices with different architectures.
-##
 ## Converting existent types to serializable
 ## -----------------------------------------
 ## In case when the type to be serialized cannot be rewriten under the
@@ -263,6 +246,27 @@
 ##   ...
 ##   include oids # Oid's fields are visible only inside the module, so including is necessary
 ##   toSerializable(Oid)
+##   ...
+##   toSerializable(Point2d, dynamic: false) # The "dynamic: false" option
+##                                           # is equal to "static:" for
+##                                           # serializable macro
+##
+## Usage of int, float, uint types without size specifier
+## ------------------------------------------------------
+## By default the serializable macro throws an error when the type
+## under the macro contains basic type description without size specification.
+## For example, the following code will cause an error:
+##
+## .. code-block:: nim
+##   serializable:
+##     type MyInt = distinct int
+##
+## To avoid this behaviour one can tell the macro to allow all basic type
+## description without size specification
+## by using **-d:allow_undefined_type_size** compiler switch.
+## You must avoid to use this switch as far as possible because when
+## the switch enabled the library can not guarantee proper deserialization
+## of objects on devices with different architectures.
 ##
 ## Enum correctness checking
 ## -------------------------
