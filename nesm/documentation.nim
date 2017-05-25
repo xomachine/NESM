@@ -251,6 +251,62 @@
 ##                                           # is equal to "static:" for
 ##                                           # serializable macro
 ##
+## Customizing seq and string serialization schemas
+## ------------------------------------------------
+## By default, NESM serializes seq's and string's in a following way:
+## 1. Serialize the seq or string length as uint32
+## 2. Serialize the seq or string content as an array[length, type]
+## In other words seq and string types can be described in following
+## pseudo-code:
+##
+## .. code-block:: nim
+##   serializable:
+##     type seq[T] = object
+##       length: uint32
+##       data: array[length, T]
+##     type string = object
+##       length: uint32
+##       data: array[length, char]
+##
+## In some cases this scheme is being not flexible enough, say there is
+## a structure:
+##
+## .. code-block:: nim
+##   serializable:
+##     type Matrix = object
+##       lines: uint32
+##       columns: uint32
+##       data: array[lines, array[columns, int32]]
+##
+## This type is impossible in Nim due to static nature of array type.
+## But how else the seq size may be controlled outside the common scheme?
+## For this case the **size** keyword exists in serializable options:
+##
+## .. code-block:: nim
+##   serializable:
+##     type Matrix = object
+##       lines: uint32 # the size specifier should be placed before it's usage in the 'size' option
+##       columns: uint32
+##       data: seq[seq[int32]] {size: {}.lines, size: {}.columns}
+##       # The seq's will be stored like array's but their sizes will be
+##       # taken from 'lines' and 'columns' fields during deserialization
+##
+## Note that first 'size' option controls only outer seq, but the second
+## one is related to inner seq. Honestly, any valid expression can be used as
+## argument for the 'size' option. Empty curly braces mean an object itself
+## at the level of invocation. Special case is a double, triple, etc empty
+## curly braces. Take a look at the example:
+##
+## .. code-block:: nim
+##   serializable:
+##     type SpecialType = object
+##       length: uint32 # <- this field will be used as length of subtype.a
+##       subtype: tuple[length: string, a: seq[int32] {size: {{}}.length}]
+##
+## The 'size' options invocation located inside the subtype field, and
+## the only way to use field 'length' from the outer type without affecting
+## inner string 'subtype.length' is the double curly braces notation.
+##
 ## Usage of int, float, uint types without size specifier
 ## ------------------------------------------------------
 ## By default the serializable macro throws an error when the type
