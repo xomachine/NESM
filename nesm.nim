@@ -13,7 +13,6 @@ when not defined(nimdoc):
   from nesm.objects import applyOptions
 else:
   import endians
-  type TypeChunk = object
   include nesm.documentation
 
 const SERIALIZER_INPUT_NAME = "obj"
