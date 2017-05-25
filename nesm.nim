@@ -1,6 +1,6 @@
 when defined(js):
   error("Non C-like targets non supported yet.")
-
+{.deadCodeElim: on.}
 import macros
 from strutils import `%`
 from sequtils import toSeq
