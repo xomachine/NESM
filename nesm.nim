@@ -167,6 +167,10 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
       elif c.len == 3 and c[0] == settingsKeyword and
            c[1].kind == nnkTableConstr:
         continue
+      elif c[last].kind == nnkTupleTy:
+        var newID = c
+        newID[last] = cleanupTypeDeclaration(c[last])
+        children.add(newID)
       else:
         children.add(c)
     else:
