@@ -124,3 +124,24 @@ suite "Custom periodic size":
     require(o.a.data.len == dso.a.data.len)
     for i in 0..<o.a.dsize:
       check(o.a.data[i] == dso.a.data[i])
+
+  test "From inside":
+    serializable:
+      type NestedTuple = object
+        length: int32
+        data: tuple[name: string, code: seq[int32] {size: {{}}.length}]
+
+    let rnw = get_reader_n_writer()
+    var o: NestedTuple
+    o.data.name = get_random_string()
+    o.data.code = random_seq_with(random(20000).int32)
+    o.length = o.data.code.len.int32
+    o.serialize(rnw)
+    rnw.setPosition(0)
+    let dso = NestedTuple.deserialize(rnw)
+    require(size(o) == size(dso))
+    check(o.data.name == dso.data.name)
+    require(o.length == dso.length)
+    require(o.data.code.len == dso.data.code.len)
+    for i in 0..<o.length:
+      check(o.data.code[i] == dso.data.code[i])
