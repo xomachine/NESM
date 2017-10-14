@@ -201,7 +201,7 @@
 ##     serializable:
 ##       type MyType = object
 ##         typical_field: string
-##         field_with_special_rules: int32 {<options>} # inline options
+##         field_with_special_rules: int32 as {<options>} # inline options
 ##         # NOTE: inline options have highest priority
 ##         another_typical_field: float32
 ##
@@ -287,7 +287,7 @@
 ##     type Matrix = object
 ##       lines: uint32 # the size specifier should be placed before it's usage in the 'size' option
 ##       columns: uint32
-##       data: seq[seq[int32]] {size: {}.lines, size: {}.columns}
+##       data: seq[seq[int32]] as {size: {}.lines, size: {}.columns}
 ##       # The seq's will be stored like array's but their sizes will be
 ##       # taken from 'lines' and 'columns' fields during deserialization
 ##
@@ -301,7 +301,7 @@
 ##   serializable:
 ##     type SpecialType = object
 ##       length: uint32 # <- this field will be used as length of subtype.a
-##       subtype: tuple[length: string, a: seq[int32] {size: {{}}.length}]
+##       subtype: tuple[length: string, a: seq[int32] as {size: {{}}.length}]
 ##
 ## The 'size' options invocation located inside the subtype field, and
 ## the only way to use field 'length' from the outer type without affecting
