@@ -243,3 +243,13 @@ suite "Dynamic structure tests":
     check(d.d == o.d)
     check(d.s == o.s)
     check(o.size() == 9)
+
+  test "else: discard":
+    serializable:
+      type ED = object
+        case a: uint8
+        else: discard
+    let rnw = get_random_reader_n_writer()
+    let o = ED.deserialize(rnw)
+    rnw.setPosition(0)
+    o.serialize(rnw)
