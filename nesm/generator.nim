@@ -95,9 +95,9 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
     elif thetype.repr == "string":
       if context.is_static:
         error("Strings are not allowed in static context")
-      assert(context.size_override.len in 0..1, "To many 'size' options")
-      if context.size_override.len > 0:
-        let capture = context.size_override[0]
+      assert(context.overrides.size.len in 0..1, "To many 'size' options")
+      if context.overrides.size.len > 0:
+        let capture = context.overrides.size[0]
         let size = capture.size
         let relative_depth = context.depth - capture.depth
         let len_proc = proc (s: NimNode): NimNode =
@@ -151,9 +151,9 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         error("Dynamic types are not supported in static" &
               " structures")
       let elem = thetype[1]
-      if context.size_override.len > 0:
+      if context.overrides.size.len > 0:
         var subcontext = context
-        let capture = subcontext.size_override.pop()
+        let capture = subcontext.overrides.size.pop()
         let size = capture.size
         let relative_depth = context.depth - capture.depth
         let seqLen = proc (s: NimNode): NimNode =

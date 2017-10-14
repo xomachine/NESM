@@ -58,7 +58,9 @@ proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
       of 2: result.is_static = false
       else: error("Unexpected error! dynamic is in superposition! WTF?")
     of "size":
-      result.size_override.insert((option[1], context.depth), 0)
+      result.overrides.size.insert((option[1], context.depth), 0)
+    of "sizeof":
+      discard
     else:
       error("Unknown setting: " & key)
 

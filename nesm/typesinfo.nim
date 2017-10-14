@@ -24,15 +24,20 @@ type
     size: NimNode
     depth: Natural
 
+  Overrides* = tuple
+    size: seq[SizeCapture]
+    sizeof: seq[SizeCapture]
+
   Context* = object
     declared*: Table[string, TypeChunk]
-    size_override*: seq[SizeCapture]
+    overrides*: Overrides
     depth*: Natural
     is_static*: bool
     swapEndian*: bool
 
 proc initContext*(): Context =
-  result.size_override = newSeq[SizeCapture]()
+  result.overrides.size = newSeq[SizeCapture]()
+  result.overrides.sizeof = newSeq[SizeCapture]()
   result.declared = initTable[string, TypeChunk]()
   result.depth = 0
   result.is_static = false
