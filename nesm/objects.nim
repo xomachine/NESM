@@ -88,7 +88,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
     for i in elems.items():
       let n = !i.name
       let newsource =
-        if ($n).len > 0: (quote do: `source`.`n`).last
+        if ($n).len > 0: (quote do: `source`.`n`)
         else: source
       let e = i.chunk
       let part_size = e.size(newsource)
@@ -107,7 +107,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
     for i in elems.items():
       let n = !i.name
       let newsource =
-        if ($n).len > 0: (quote do: `source`.`n`).last
+        if ($n).len > 0: (quote do: `source`.`n`)
         else: source
       let e = i.chunk
       result.add(e.serialize(newsource))
@@ -116,7 +116,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
     for i in elems.items():
       let n = !i.name
       let newsource =
-        if ($n).len > 0: (quote do: `source`.`n`).last
+        if ($n).len > 0: (quote do: `source`.`n`)
         else: source
       let e = i.chunk
       result &= e.deserialize(newsource)
@@ -162,7 +162,7 @@ proc genCase(context: Context, decl: NimNode): TypeChunk =
   let deserializes = branches.mapIt(it[2])
   result.dynamic = true
   let condition = proc (source: NimNode): NimNode =
-    (quote do: `source`.`checkable`).last
+    (quote do: `source`.`checkable`)
   result.size = proc(source: NimNode):NimNode =
     let sizenodes:seq[NimNode] = sizes.mapIt(it(source))
     if context.is_static:

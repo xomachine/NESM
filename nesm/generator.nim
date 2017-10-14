@@ -57,7 +57,7 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
       if context.is_static:
         error("Strings are not allowed in static context")
       let len_proc = proc (s: NimNode):NimNode =
-        (quote do: len(`s`)).last
+        (quote do: len(`s`))
       result = context.genPeriodic(newEmptyNode(), len_proc)
     elif thetype.repr == "cstring":
       if context.is_static:
@@ -67,7 +67,7 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
       result.deserialize = proc (s: NimNode): NimNode =
         genCStringDeserialize(s)
       result.size = proc (s: NimNode): NimNode =
-        (quote do: len(`s`) + 1).last
+        (quote do: len(`s`) + 1)
     else:
       error(("Type $1 is not a basic " % plaintype) &
             "type nor a complex type under 'serializable'" &
@@ -97,7 +97,7 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
               " structures")
       let elem = thetype[1]
       let seqLen = proc (source: NimNode): NimNode =
-        (quote do: len(`source`)).last
+        (quote do: len(`source`))
       result = context.genPeriodic(elem, seqLen)
     of "set":
       result = context.genSet(thetype)
