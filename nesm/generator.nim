@@ -212,8 +212,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         `deserialization`
         cast[type(`r`)](`tmp`)
   else:
-    discard
-    error("Unexpected AST: " & thetype.treeRepr)
+    error("Unexpected AST: " & thetype.treeRepr & "\n at " & thetype.lineinfo())
   result.dynamic = not context.is_static
 
 
