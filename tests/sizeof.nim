@@ -8,7 +8,7 @@ suite "{sizeof: x}":
   test "Basic":
     serializable:
       type Basic = object
-        size: int32 {sizeof: {}.data}
+        size: int32 as {sizeof: {}.data}
         a: int32
         data: seq[int32]
 

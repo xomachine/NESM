@@ -66,7 +66,7 @@ suite "Endianness support":
         type SomeInline = object
           set: {endian: bigEndian}
           od: int32
-          sd: int32 {endian: littleEndian}
+          sd: int32 as {endian: littleEndian}
           od2: int32
     let rnw = get_random_reader_n_writer()
     let dso = SomeInline.deserialize(rnw)
