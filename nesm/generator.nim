@@ -9,6 +9,11 @@ from sequtils import mapIt, foldl, toSeq, filterIt
 proc genTypeChunk*(immutableContext: Context,
                    thetype: NimNode): TypeChunk {.compileTime.}
 proc correct_sum*(part_size: NimNode): NimNode {.compileTime.}
+proc unfold*(node: NimNode): NimNode =
+  if node.kind == nnkStmtList and node.len == 1:
+    node.last
+  else:
+    node
 
 static:
   let STREAM_NAME* = !"thestream"
@@ -112,7 +117,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
             `deser`
       else:
         let len_proc = proc (s: NimNode): NimNode =
-            (quote do: len(`s`))
+            (quote do: len(`s`)).unfold()
         result = context.genPeriodic(newEmptyNode(), len_proc)
     elif thetype.repr == "cstring":
       if context.is_static:
@@ -122,7 +127,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
       result.deserialize = proc (s: NimNode): NimNode =
         genCStringDeserialize(s)
       result.size = proc (s: NimNode): NimNode =
-        (quote do: len(`s`) + 1)
+        (quote do: len(`s`) + 1).unfold()
     else:
       error(("Type $1 is not a basic " % plaintype) &
             "type nor a complex type under 'serializable'" &
@@ -168,7 +173,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
             `deser`
       else:
         let seqLen = proc (source: NimNode): NimNode =
-          (quote do: len(`source`))
+          (quote do: len(`source`)).unfold()
         result = context.genPeriodic(elem, seqLen)
     of "set":
       result = context.genSet(thetype)
