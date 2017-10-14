@@ -1,6 +1,6 @@
 from nesm.typesinfo import Context, TypeChunk, estimateBasicSize, isBasic
 from nesm.basics import genSerialize, genDeserialize
-from nesm.generator import genTypeChunk, STREAM_NAME, correct_sum
+from nesm.generator import genTypeChunk, STREAM_NAME, correct_sum, unfold
 from streams import writeData, write, readChar
 import macros
 
@@ -44,14 +44,14 @@ proc genPeriodic*(context: Context, elem: NimNode,
       arraylen.infix("*", newIntLitNode(elemSize))
     result.serialize = proc (s: NimNode): NimNode =
       let lens = length(s)
-      let size = (quote do: `lens` * `eSize`)
-      let newsource = (quote do: `s`[0])
+      let size = (quote do: `lens` * `eSize`).unfold()
+      let newsource = (quote do: `s`[0]).unfold()
       let serialization = genSerialize(newsource, size)
       quote do:
         if `lens` > 0: `serialization`
     result.deserialize = proc (s: NimNode): NimNode =
-      let size = (quote do: `lenvarname` * `eSize`)
-      let newsource = (quote do: `s`[0])
+      let size = (quote do: `lenvarname` * `eSize`).unfold()
+      let newsource = (quote do: `s`[0]).unfold()
       let deserialization = genDeserialize(newsource, size)
       quote do:
         if `lenvarname` > 0: `deserialization`
@@ -63,7 +63,7 @@ proc genPeriodic*(context: Context, elem: NimNode,
     let index_letter = nskForVar.genSym("index")
     result.size = proc (s: NimNode): NimNode =
       let periodic_len = length(s)
-      let newsource = (quote do: `s`[`index_letter`])
+      let newsource = (quote do: `s`[`index_letter`]).unfold()
       let chunk_size = one_chunk.size(newsource)
       if is_array and chunk_size.kind != nnkStmtList:
         periodic_len.infix("*", chunk_size)
@@ -74,13 +74,13 @@ proc genPeriodic*(context: Context, elem: NimNode,
             `chunk_expr`
     result.serialize = proc(s: NimNode): NimNode =
       let periodic_len = length(s)
-      let newsource = (quote do: `s`[`index_letter`])
+      let newsource = (quote do: `s`[`index_letter`]).unfold()
       let chunk_expr = onechunk.serialize(newsource)
       quote do:
         for `index_letter` in 0..<(`periodic_len`):
           `chunk_expr`
     result.deserialize = proc(s: NimNode): NimNode =
-      let newsource = (quote do: `s`[`index_letter`])
+      let newsource = (quote do: `s`[`index_letter`]).unfold()
       let chunk_expr = onechunk.deserialize(newsource)
       quote do:
         for `index_letter` in 0..<(`lenvarname`):
@@ -109,8 +109,8 @@ proc genPeriodic*(context: Context, elem: NimNode,
         `pr_ser`
     result.deserialize = proc(s:NimNode): NimNode =
       let init_template =
-        if elem.kind == nnkEmpty: (quote do: newString)
-        else: (quote do: newSeq[`elem`])
+        if elem.kind == nnkEmpty: (quote do: newString).unfold()
+        else: (quote do: newSeq[`elem`]).unfold()
       let sd = size_header_chunk.deserialize(lenvarname)
       let deserialization = preresult.deserialize(s)
       quote do:
