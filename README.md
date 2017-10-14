@@ -1,4 +1,4 @@
-# NESM
+# NESM [![Build Status](https://travis-ci.org/xomachine/NESM.svg?branch=master)](https://travis-ci.org/xomachine/NESM)
 NESM stands for Nim's Easy Serialization Macro. The macro that allowing generation of serialization functions by one line of code!
 
 Documentation can be found [here](https://xomachine.github.io/NESM). Dont forget to check out the [tests](https://github.com/xomachine/NESM/tree/master/tests) for more examples.
