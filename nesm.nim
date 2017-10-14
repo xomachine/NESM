@@ -24,9 +24,17 @@ const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
   """: seq[byte | char | int8 | uint8] | string):""" &
   """$2 = discard"""
 
+proc wrapImmutableBody(immutable: string,
+                       action: proc(s:NimNode):NimNode): NimNode =
+  let mutable_obj = nskVar.genSym(immutable)
+  let immutable_obj = newIdentNode(immutable)
+  let body = action(mutable_obj)
+  quote do:
+    var `mutable_obj` = `immutable_obj`
+    `body`
+
 proc makeSerializeStreamDeclaration(typename: string,
-    is_exported: bool,
-    body: NimNode): NimNode {.compileTime.} =
+    is_exported: bool, body: NimNode): NimNode {.compileTime.} =
   let itn = !typename
   let fname =
     if is_exported: newIdentNode("serialize").postfix("*")
@@ -34,7 +42,8 @@ proc makeSerializeStreamDeclaration(typename: string,
   let isin = !SERIALIZER_INPUT_NAME
   quote do:
     proc `fname`(`isin`: `itn`,
-                 `STREAM_NAME`: Stream) = `body`
+                 `STREAM_NAME`: Stream) =
+      `body`
 
 proc makeDeserializeStreamDeclaration(typename: string,
     is_exported: bool,
@@ -93,8 +102,6 @@ proc generateProcs(context: var Context,
     else: ""
   let body = obj[2]
   let info = context.genTypeChunk(body)
-  let size_node =
-    info.size(newIdentNode(SERIALIZER_INPUT_NAME))
   context.declared[name] = info
   let writer_conversion = makeSerializeStreamConversion()
   let serializer = generateProc(SERIALIZE_DECLARATION,
@@ -102,7 +109,7 @@ proc generateProcs(context: var Context,
                                 writer_conversion)
   let serialize_stream =
     makeSerializeStreamDeclaration(name, is_shared,
-      info.serialize(newIdentNode(SERIALIZER_INPUT_NAME)))
+      wrapImmutableBody(SERIALIZER_INPUT_NAME, info.serialize))
   let obtainer_conversion =
     if context.is_static:
       makeDeserializeStreamConversion("result")
@@ -118,6 +125,9 @@ proc generateProcs(context: var Context,
   let size_declaration =
     if context.is_static: STATIC_SIZE_DECLARATION
     else: SIZE_DECLARATION
+  let size_node =
+    if context.is_static: info.size(newIdentNode(SERIALIZER_INPUT_NAME))
+    else: wrapImmutableBody(SERIALIZER_INPUT_NAME, info.size)
   let sizeProc = generateProc(size_declaration, name, sign,
                               size_node)
   newStmtList(sizeProc, serialize_stream, serializer,

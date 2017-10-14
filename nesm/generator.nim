@@ -85,18 +85,28 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
       case context.overrides.sizeof.len:
       of 0: discard
       of 1:
+        assert(not context.is_static,
+               "Sizeof option is not allowed in the static context!")
         assert(plaintype[0..2] in ["uin", "int"],
-               "The sizeof the seq must be an integer type!")
+               "The sizeof field must be an integer type!")
+        let prev_serialize = result.serialize
         let capture = context.overrides.sizeof[0]
         let relative_depth = context.depth - capture.depth
-        let tmpsym = nskLet.genSym("tmp")
-        let preser = result.serialize(tmpsym)
-        let undertype = newIdentNode("uint" &
-                                $(result.size(newEmptyNode()).intVal * 8))
+        let prev_size = result.size(newEmptyNode()).intVal
+        let undertype = newIdentNode("int" &
+                                $(prev_size * 8))
+        result.size = proc(source: NimNode): NimNode =
+          let origin = capture.size.insert_source(source, relative_depth)
+          let presize = newIntLitNode(prev_size)
+          let resultnode = !"result"
+          quote do:
+            `source` = `origin`.len.`undertype`
+            `resultnode` += `presize`
         result.serialize = proc(source: NimNode): NimNode =
           let origin = capture.size.insert_source(source, relative_depth)
+          let preser = prev_serialize(source)
           quote do:
-            let `tmpsym`: `undertype` = `origin`.len.`undertype`
+            `source` = `origin`.len.`undertype`
             `preser`
       else:
         error("It is impossible to use more than one sizeof options at once!")
