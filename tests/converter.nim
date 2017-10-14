@@ -1,32 +1,32 @@
 from nesm import toSerializable, serializable
 from streams import setPosition
-from basic2d import Point2d
+from md5 import Md5digest
 from endians import bigEndian32
 import unittest
 import helpers.rnw
 
 suite "Converter tests":
   test "Simple object":
-    toSerializable(Point2d)
+    toSerializable(MD5Digest)
     let rnw = get_random_reader_n_writer()
-    let pnt = Point2d.deserialize(rnw)
+    let pnt = MD5Digest.deserialize(rnw)
     rnw.setPosition(0)
     pnt.serialize(rnw)
   test "Object with endian":
-    toSerializable(Point2d, endian: bigEndian)
+    toSerializable(MD5Digest, endian: bigEndian)
     let rnw = get_random_reader_n_writer()
-    let pnt = Point2d.deserialize(rnw)
+    let pnt = MD5Digest.deserialize(rnw)
     rnw.setPosition(0)
     pnt.serialize(rnw)
   test "Static object":
-    toSerializable(Point2d, dynamic: false)
+    toSerializable(MD5Digest, dynamic: false)
     let rnw = get_random_reader_n_writer()
-    let pnt = Point2d.deserialize(rnw)
+    let pnt = MD5Digest.deserialize(rnw)
     rnw.setPosition(0)
     pnt.serialize(rnw)
   test "Context restoration":
     # It's just a compilation test
-    toSerializable(Point2d, dynamic: false)
+    toSerializable(MD5Digest, dynamic: false)
     serializable:
       type A = object
         a: string
