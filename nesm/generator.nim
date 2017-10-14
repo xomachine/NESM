@@ -21,11 +21,11 @@ from nesm.sets import genSet
 
 
 proc correct_sum(part_size: NimNode): NimNode =
-  let result_node = newIdentNode("result")
-  if part_size.kind in [nnkStmtList, nnkCaseStmt]:
-    part_size
-  else:
+  if part_size.kind == nnkInfix or part_size.len == 0:
+    let result_node = newIdentNode("result")
     result_node.infix("+=", part_size)
+  else:
+    part_size
 
 proc dig(node: NimNode, depth: Natural): NimNode {.compileTime.} =
   if depth == 0:
@@ -112,7 +112,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
             `deser`
       else:
         let len_proc = proc (s: NimNode): NimNode =
-            (quote do: len(`s`)).last
+            (quote do: len(`s`))
         result = context.genPeriodic(newEmptyNode(), len_proc)
     elif thetype.repr == "cstring":
       if context.is_static:
@@ -122,7 +122,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
       result.deserialize = proc (s: NimNode): NimNode =
         genCStringDeserialize(s)
       result.size = proc (s: NimNode): NimNode =
-        (quote do: len(`s`) + 1).last
+        (quote do: len(`s`) + 1)
     else:
       error(("Type $1 is not a basic " % plaintype) &
             "type nor a complex type under 'serializable'" &
@@ -168,7 +168,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
             `deser`
       else:
         let seqLen = proc (source: NimNode): NimNode =
-          (quote do: len(`source`)).last
+          (quote do: len(`source`))
         result = context.genPeriodic(elem, seqLen)
     of "set":
       result = context.genSet(thetype)

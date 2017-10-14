@@ -50,15 +50,15 @@ proc genPeriodic*(context: Context, elem: NimNode,
       arraylen.infix("*", newIntLitNode(elemSize))
     result.serialize = proc (s: NimNode): NimNode =
       let lens = length(s)
-      let size = (quote do: `lens` * `eSize`).last
-      let newsource = (quote do: `s`[0]).last
+      let size = (quote do: `lens` * `eSize`)
+      let newsource = (quote do: `s`[0])
       let serialization = genSerialize(newsource, size)
       quote do:
         if `lens` > 0: `serialization`
     result.deserialize = proc (s: NimNode): NimNode =
       let lens = length(s)
-      let size = (quote do: `lens` * `eSize`).last
-      let newsource = (quote do: `s`[0]).last
+      let size = (quote do: `lens` * `eSize`)
+      let newsource = (quote do: `s`[0])
       let deserialization = genDeserialize(newsource, size)
       quote do:
         if `lens` > 0: `deserialization`
@@ -70,7 +70,7 @@ proc genPeriodic*(context: Context, elem: NimNode,
     let index_letter = nskForVar.genSym("index")
     result.size = proc (s: NimNode): NimNode =
       let periodic_len = length(s)
-      let newsource = (quote do: `s`[`index_letter`]).last
+      let newsource = (quote do: `s`[`index_letter`])
       let chunk_size = one_chunk.size(newsource)
       if not chunk_size.findInChilds(index_letter):
         periodic_len.infix("*", chunk_size)
@@ -81,14 +81,14 @@ proc genPeriodic*(context: Context, elem: NimNode,
             `chunk_expr`
     result.serialize = proc(s: NimNode): NimNode =
       let periodic_len = length(s)
-      let newsource = (quote do: `s`[`index_letter`]).last
+      let newsource = (quote do: `s`[`index_letter`])
       let chunk_expr = onechunk.serialize(newsource)
       quote do:
         for `index_letter` in 0..<(`periodic_len`):
           `chunk_expr`
     result.deserialize = proc(s: NimNode): NimNode =
       let lens = length(s)
-      let newsource = (quote do: `s`[`index_letter`]).last
+      let newsource = (quote do: `s`[`index_letter`])
       let chunk_expr = onechunk.deserialize(newsource)
       quote do:
         for `index_letter` in 0..<(`lens`):
@@ -117,8 +117,8 @@ proc genPeriodic*(context: Context, elem: NimNode,
         `pr_ser`
     result.deserialize = proc(s:NimNode): NimNode =
       let init_template =
-        if elem.kind == nnkEmpty: (quote do: newString).last
-        else: (quote do: newSeq[`elem`]).last
+        if elem.kind == nnkEmpty: (quote do: newString)
+        else: (quote do: newSeq[`elem`])
       let sd = size_header_chunk.deserialize(lenvarname)
       let deserialization = preresult.deserialize(s)
       quote do:
