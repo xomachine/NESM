@@ -307,6 +307,17 @@
 ## the only way to use field 'length' from the outer type without affecting
 ## inner string 'subtype.length' is the double curly braces notation.
 ##
+## In oposite to `size` option there is `sizeof` option with can be used to
+## set particular fields value to length of other periodic value instead of
+## actual one during serialization. The previous example can be rewriten in
+## following way to utilize the `sizeof` option:
+##
+## .. code-block:: nim
+##   serializable:
+##     type SpecialType = object
+##       length: uint32 as {sizeof: {}.subtype.a}
+##       subtype: tuple[length: string, a: seq[int32] as {size: {{}}.length}]
+##
 ## Usage of int, float, uint types without size specifier
 ## ------------------------------------------------------
 ## By default the serializable macro throws an error when the type
