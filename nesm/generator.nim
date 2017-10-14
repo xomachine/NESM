@@ -211,6 +211,8 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         var `tmp` = cast[`basetype`](`source`)
         `deserialization`
         cast[type(`r`)](`tmp`)
+  of nnkNilLit:
+    result = context.genObject(newTree(nnkRecList, thetype))
   else:
     error("Unexpected AST: " & thetype.treeRepr & "\n at " & thetype.lineinfo())
   result.dynamic = not context.is_static

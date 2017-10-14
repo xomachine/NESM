@@ -162,8 +162,8 @@ proc genFields(context: Context, decl: NimNode): FieldChunk =
 proc genCase(context: Context, decl: NimNode): TypeChunk =
   let checkable = decl[0][0].basename
   let eachbranch = proc(b: NimNode): auto =
-    let conditions = toSeq(b.children)
-      .filterIt(it.kind != nnkRecList)
+    let children = toSeq(b.children)
+    let conditions = children[0..^2]
     let branch = context.genTypeChunk(b.last)
     let size = proc(source: NimNode):NimNode =
       let casebody = branch.size(source)
