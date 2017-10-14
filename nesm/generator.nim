@@ -82,6 +82,24 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
     if plaintype.isBasic():
       let size = estimateBasicSize(plaintype)
       result = context.genBasic(size)
+      case context.overrides.sizeof.len:
+      of 0: discard
+      of 1:
+        assert(plaintype[0..2] in ["uin", "int"],
+               "The sizeof the seq must be an integer type!")
+        let capture = context.overrides.sizeof[0]
+        let relative_depth = context.depth - capture.depth
+        let tmpsym = nskLet.genSym("tmp")
+        let preser = result.serialize(tmpsym)
+        let undertype = newIdentNode("uint" &
+                                $(result.size(newEmptyNode()).intVal * 8))
+        result.serialize = proc(source: NimNode): NimNode =
+          let origin = capture.size.insert_source(source, relative_depth)
+          quote do:
+            let `tmpsym`: `undertype` = `origin`.len.`undertype`
+            `preser`
+      else:
+        error("It is impossible to use more than one sizeof options at once!")
     elif plaintype in context.declared:
       let declared_type = context.declared[plaintype]
       if declared_type.dynamic and context.is_static:

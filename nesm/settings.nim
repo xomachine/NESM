@@ -32,7 +32,7 @@ proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
     of "size":
       result.overrides.size.insert((option[1], context.depth), 0)
     of "sizeof":
-      discard
+      result.overrides.sizeof.add((option[1], context.depth))
     else:
       error("Unknown setting: " & key)
 
