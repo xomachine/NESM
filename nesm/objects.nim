@@ -1,7 +1,7 @@
 from sequtils import toSeq, filterIt, mapIt
-from strutils import cmpIgnoreStyle
 from nesm.generator import genTypeChunk, correct_sum
 from nesm.typesinfo import TypeChunk, Context
+from nesm.settings import applyOptions, splitSettingsExpr
 import macros
 
 type
@@ -13,12 +13,11 @@ type
     has_hidden: bool
 
 proc genObject*(context: Context, thetype: NimNode): TypeChunk {.compileTime.}
-proc applyOptions*(context: Context,
-                   options: NimNode | seq[NimNode]): Context {.compileTime.}
 proc genCase(context: Context, decl: NimNode): TypeChunk {.compileTime.}
 proc caseWorkaround(tc: TypeChunk): TypeChunk {.compileTime.}
 proc evalSize(e: NimNode): BiggestInt {.compileTime.}
 proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
+
 
 proc caseWorkaround(tc: TypeChunk): TypeChunk =
   # st - type of field under case
@@ -37,32 +36,6 @@ proc caseWorkaround(tc: TypeChunk): TypeChunk =
       var `tmpvar`: type(`s`)
       `ods`
       `s` = `tmpvar`
-
-proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
-  result = context
-  for option in options.items():
-    option.expectKind(nnkExprColonExpr)
-    option.expectMinLen(2)
-    let key = option[0].repr
-    let val = option[1].repr
-    case key
-    of "endian":
-      result.swapEndian = cmpIgnoreStyle(val, $cpuEndian) != 0
-    of "dynamic":
-      let code = int(cmpIgnoreStyle(val, "true") == 0) +
-                 2*int(cmpIgnoreStyle(val, "false") == 0)
-      case code
-      of 0: error("The dynamic property can be only 'true' or 'false' but not" &
-                  val)
-      of 1: result.is_static = true
-      of 2: result.is_static = false
-      else: error("Unexpected error! dynamic is in superposition! WTF?")
-    of "size":
-      result.overrides.size.insert((option[1], context.depth), 0)
-    of "sizeof":
-      discard
-    else:
-      error("Unknown setting: " & key)
 
 proc genObject(context: Context, thetype: NimNode): TypeChunk =
   var elems = newSeq[Field]()
@@ -149,17 +122,13 @@ proc genFields(context: Context, decl: NimNode): FieldChunk =
     if decl[^1].kind == nnkEmpty: decl.len - 2
     else: decl.len - 1
   let subtype = decl[last]
-  let chunk =
-    if subtype.kind == nnkCurlyExpr:
-      context.applyOptions(toSeq(subtype.children)[1..<subtype.len])
-             .genTypeChunk(subtype[0])
-    else: context.genTypeChunk(subtype)
+  let (originalType, options) = subtype.splitSettingsExpr()
+  let chunk = context.applyOptions(options).genTypeChunk(originalType)
   for i in 0..<last:
     if decl[i].kind != nnkPostfix:
       result.has_hidden = true
     let name = $decl[i].basename
     result.entries.add((name: name, chunk: chunk))
-
 
 proc genCase(context: Context, decl: NimNode): TypeChunk =
   let checkable = decl[0][0].basename

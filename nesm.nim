@@ -10,7 +10,7 @@ from streams import Stream, newStringStream
 when not defined(nimdoc):
   from nesm.typesinfo import TypeChunk, Context, initContext
   from nesm.generator import genTypeChunk, STREAM_NAME
-  from nesm.objects import applyOptions
+  from nesm.settings import applyOptions, splitSettingsExpr
 else:
   import endians
   include nesm.documentation
@@ -151,13 +151,14 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
         children.add(cleanupTypeDeclaration(cc))
     of nnkIdentDefs:
       let last = if c[^1].kind == nnkEmpty: c.len - 2 else: c.len - 1
-      if c[last].kind == nnkCurlyExpr:
+      let (originalType, options) = c[last].splitSettingsExpr()
+      if options.len > 0:
         # newID need to be a NimNode that contains IdentDefs node
         # to utilze recursive call of cleanupTypeDeclaration
-        var newID = newTree(nnkStmtList, newNimNode(nnkIdentDefs))
-        copyChildrenTo(c, newID[0])
+        var newID = newTree(nnkStmtList, c)
+        #copyChildrenTo(c, newID[0])
         # first element of CurlyExpr is an actual type
-        newID[0][last] = c[last][0]
+        newID[0][last] = originalType
         children.add(newID.cleanupTypeDeclaration()[0])
       elif c[last].repr == "cstring":
         var newID = newNimNode(nnkIdentDefs)
