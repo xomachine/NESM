@@ -1,6 +1,7 @@
 import macros
 from nesm.typesinfo import isBasic, estimateBasicSize
 from nesm.typesinfo import TypeChunk, Context
+from nesm.utils import unfold
 from tables import Table, contains, `[]`, `[]=`, initTable,
                    pairs
 from strutils import `%`
@@ -9,11 +10,6 @@ from sequtils import mapIt, foldl, toSeq, filterIt
 proc genTypeChunk*(immutableContext: Context,
                    thetype: NimNode): TypeChunk {.compileTime.}
 proc correct_sum*(part_size: NimNode): NimNode {.compileTime.}
-proc unfold*(node: NimNode): NimNode =
-  if node.kind == nnkStmtList and node.len == 1:
-    node.last
-  else:
-    node
 
 static:
   let STREAM_NAME* = !"thestream"

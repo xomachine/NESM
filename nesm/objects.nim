@@ -1,5 +1,6 @@
 from sequtils import toSeq, filterIt, mapIt
-from nesm.generator import genTypeChunk, correct_sum, unfold
+from nesm.generator import genTypeChunk, correct_sum
+from nesm.utils import unfold
 from nesm.typesinfo import TypeChunk, Context
 from nesm.settings import applyOptions, splitSettingsExpr
 import macros

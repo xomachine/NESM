@@ -1,6 +1,7 @@
 from nesm.typesinfo import Context, TypeChunk, estimateBasicSize, isBasic
 from nesm.basics import genSerialize, genDeserialize
-from nesm.generator import genTypeChunk, STREAM_NAME, correct_sum, unfold
+from nesm.generator import genTypeChunk, STREAM_NAME, correct_sum
+from nesm.utils import unfold
 from streams import writeData, write, readChar
 import macros
 
