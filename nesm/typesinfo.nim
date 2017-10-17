@@ -9,10 +9,11 @@ const basic_types = [
 ]
 
 type
+  BodyGenerator* = proc (source: NimNode): NimNode
   TypeChunk* = object
-    size*: proc(source: NimNode): NimNode
-    serialize*: proc(source: NimNode): NimNode
-    deserialize*: proc(source: NimNode): NimNode
+    size*: BodyGenerator
+    serialize*: BodyGenerator
+    deserialize*: BodyGenerator
     dynamic*: bool
     has_hidden*: bool
     case nodekind*: NimNodeKind
