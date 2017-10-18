@@ -88,21 +88,12 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         let prev_serialize = result.serialize
         let capture = context.overrides.sizeof[0]
         let relative_depth = context.depth - capture.depth
-        let prev_size = result.size(newEmptyNode()).intVal
-        let undertype = newIdentNode("int" &
-                                $(prev_size * 8))
-        result.size = proc(source: NimNode): NimNode =
-          let origin = capture.size.insert_source(source, relative_depth)
-          let presize = newIntLitNode(prev_size)
-          let resultnode = !"result"
-          quote do:
-            `source` = `origin`.len.`undertype`
-            `resultnode` += `presize`
         result.serialize = proc(source: NimNode): NimNode =
           let origin = capture.size.insert_source(source, relative_depth)
-          let preser = prev_serialize(source)
+          let tmpvar = nskLet.genSym("seqLen")
+          let preser = prev_serialize(tmpvar)
           quote do:
-            `source` = `origin`.len.`undertype`
+            let `tmpvar` = cast[`thetype`](`origin`.len)
             `preser`
       else:
         error("It is impossible to use more than one sizeof options at once!")
@@ -130,7 +121,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         let size = capture.size
         let relative_depth = context.depth - capture.depth
         let len_proc = proc (s: NimNode): NimNode =
-          size.insert_source(s, relative_depth)
+          (quote do: `s`.len()).unfold()
         result = context.genPeriodic(newEmptyNode(), len_proc)
         let olddeser = result.deserialize
         result.deserialize = proc (s: NimNode): NimNode =
@@ -186,7 +177,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         let size = capture.size
         let relative_depth = context.depth - capture.depth
         let seqLen = proc (s: NimNode): NimNode =
-          size.insert_source(s, relative_depth)
+          (quote do: `s`.len()).unfold()
         result = subcontext.genPeriodic(elem, seqLen)
         let olddeser = result.deserialize
         result.deserialize = proc (s: NimNode): NimNode =
