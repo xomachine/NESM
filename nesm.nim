@@ -9,130 +9,15 @@ from streams import Stream, newStringStream
 
 when not defined(nimdoc):
   from nesm.typesinfo import TypeChunk, Context, initContext
-  from nesm.generator import genTypeChunk, STREAM_NAME
+  from nesm.procgen import generateProcs
   from nesm.settings import applyOptions, splitSettingsExpr
 else:
   import endians
   include nesm.documentation
 
-const SERIALIZER_INPUT_NAME = "obj"
-const DESERIALIZER_DATA_NAME = "data"
-const SERIALIZE_DECLARATION = """proc serialize$1(""" &
-  SERIALIZER_INPUT_NAME & """: $2): string = discard"""
-const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
-  """(thetype: typedesc[$2], """ & DESERIALIZER_DATA_NAME &
-  """: seq[byte | char | int8 | uint8] | string):""" &
-  """$2 = discard"""
-
-proc wrapImmutableBody(immutable: string,
-                       action: proc(s:NimNode):NimNode): NimNode =
-  let mutable_obj = nskVar.genSym(immutable)
-  let immutable_obj = newIdentNode(immutable)
-  let body = action(mutable_obj)
-  quote do:
-    var `mutable_obj` = `immutable_obj`
-    `body`
-
-proc makeSerializeStreamDeclaration(typename: string,
-    is_exported: bool, body: NimNode): NimNode {.compileTime.} =
-  let itn = !typename
-  let fname =
-    if is_exported: newIdentNode("serialize").postfix("*")
-    else: newIdentNode("serialize")
-  let isin = !SERIALIZER_INPUT_NAME
-  quote do:
-    proc `fname`(`isin`: `itn`,
-                 `STREAM_NAME`: Stream) =
-      `body`
-
-proc makeDeserializeStreamDeclaration(typename: string,
-    is_exported: bool,
-    body: NimNode): NimNode {.compileTime.} =
-  let itn = !typename
-  let fname =
-    if is_exported:
-      newIdentNode("deserialize").postfix("*")
-    else: newIdentNode("deserialize")
-  quote do:
-    proc `fname`(thetype: typedesc[`itn`],
-                 `STREAM_NAME`: Stream): `itn` = `body`
-
-proc makeSerializeStreamConversion(): NimNode {.compileTime.} =
-  let isin = !SERIALIZER_INPUT_NAME
-  quote do:
-    let ss = newStringStream()
-    serialize(`isin`, ss)
-    ss.data
-
-proc makeDeserializeStreamConversion(name: string): NimNode {.compileTime.} =
-  let iname = !name
-  let ddn = !DESERIALIZER_DATA_NAME
-  quote do:
-    assert(`ddn`.len >= type(`iname`).size(),
-           "Given sequence should contain at least " &
-           $(type(`iname`).size()) & " bytes!")
-    let ss = newStringStream(cast[string](`ddn`))
-    deserialize(type(`iname`), ss)
-
-const STATIC_SIZE_DECLARATION =
-  """proc size$1(thetype: typedesc[$2]): int = discard"""
-const SIZE_DECLARATION = "proc size$1(" &
-                         SERIALIZER_INPUT_NAME &
-                         ": $2): int = discard"
 
 static:
   var ctx = initContext()
-proc generateProc(pattern: string, name: string,
-                  sign: string,
-                  body: NimNode = newEmptyNode()): NimNode =
-  result = parseExpr(pattern % [sign, name])
-  if body.kind != nnkEmpty:
-    result.body = body
-
-proc generateProcs(context: var Context,
-                   obj: NimNode): NimNode {.compileTime.} =
-  expectKind(obj, nnkTypeDef)
-  expectMinLen(obj, 3)
-  expectKind(obj[1], nnkEmpty)
-  let typename = if obj[0].kind == nnkPragmaExpr: obj[0][0] else: obj[0]
-  let is_shared = typename.kind == nnkPostfix
-  let name = if is_shared: $typename.basename else: $typename
-  let sign =
-    if is_shared: "*"
-    else: ""
-  let body = obj[2]
-  let info = context.genTypeChunk(body)
-  context.declared[name] = info
-  let writer_conversion = makeSerializeStreamConversion()
-  let serializer = generateProc(SERIALIZE_DECLARATION,
-                                name, sign,
-                                writer_conversion)
-  let serialize_stream =
-    makeSerializeStreamDeclaration(name, is_shared,
-      wrapImmutableBody(SERIALIZER_INPUT_NAME, info.serialize))
-  let obtainer_conversion =
-    if context.is_static:
-      makeDeserializeStreamConversion("result")
-    else: newEmptyNode()
-  let deserializer =
-    if context.is_static:
-      generateProc(DESERIALIZE_DECLARATION, name, sign,
-                   obtainer_conversion)
-    else: newEmptyNode()
-  let deserialize_stream =
-    makeDeserializeStreamDeclaration(name, is_shared,
-    info.deserialize(newIdentNode("result")))
-  let size_declaration =
-    if context.is_static: STATIC_SIZE_DECLARATION
-    else: SIZE_DECLARATION
-  let size_node =
-    if context.is_static: info.size(newIdentNode(SERIALIZER_INPUT_NAME))
-    else: wrapImmutableBody(SERIALIZER_INPUT_NAME, info.size)
-  let sizeProc = generateProc(size_declaration, name, sign,
-                              size_node)
-  newStmtList(sizeProc, serialize_stream, serializer,
-              deserialize_stream, deserializer)
-
 proc prepare(context: var Context, statements: NimNode
              ): NimNode {.compileTime.} =
   result = newStmtList()
