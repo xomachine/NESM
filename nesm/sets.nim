@@ -1,9 +1,9 @@
 import macros
 from strutils import `%`
 from tables import contains, `[]`
-from nesm.typesinfo import TypeChunk, Context
-from nesm.typesinfo import isBasic, estimateBasicSize
-from nesm.basics import genBasic
+from typesinfo import TypeChunk, Context
+from typesinfo import isBasic, estimateBasicSize
+from basics import genBasic
 
 proc genSet*(context: Context, declaration: NimNode): TypeChunk {.compileTime.}
 

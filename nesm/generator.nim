@@ -1,7 +1,7 @@
 import macros
-from nesm.typesinfo import isBasic, estimateBasicSize
-from nesm.typesinfo import TypeChunk, Context
-from nesm.utils import unfold
+from typesinfo import isBasic, estimateBasicSize
+from typesinfo import TypeChunk, Context
+from utils import unfold
 from tables import Table, contains, `[]`, `[]=`, initTable,
                    pairs
 from strutils import `%`

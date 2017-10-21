@@ -1,8 +1,7 @@
 from typesinfo import BodyGenerator, Context
 from streams import newStringStream, Stream
 from tables import `[]=`
-from nesm.utils import unfold
-from nesm.generator import STREAM_NAME, genTypeChunk
+from generator import STREAM_NAME, genTypeChunk
 import macros
 type
   ProcType = enum

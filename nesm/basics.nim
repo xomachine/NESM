@@ -1,4 +1,4 @@
-from nesm.typesinfo import Context, TypeChunk
+from typesinfo import Context, TypeChunk
 from endians import swapEndian16, swapEndian32, swapEndian64
 from streams import writeData, readData
 import macros
