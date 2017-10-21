@@ -1,11 +1,12 @@
 import macros
-from strutils import `%`
-from tables import contains, `[]`
 from typesinfo import TypeChunk, Context
-from typesinfo import isBasic, estimateBasicSize
-from basics import genBasic
 
 proc genSet*(context: Context, declaration: NimNode): TypeChunk {.compileTime.}
+
+from strutils import `%`
+from tables import contains, `[]`
+from typesinfo import isBasic, estimateBasicSize
+from basics import genBasic
 
 proc genSet(context: Context, declaration: NimNode): TypeChunk =
   declaration.expectMinLen(2)

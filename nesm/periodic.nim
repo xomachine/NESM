@@ -1,11 +1,18 @@
-from typesinfo import Context, TypeChunk, estimateBasicSize, isBasic
-from basics import genSerialize, genDeserialize
-from generator import genTypeChunk, STREAM_NAME, correct_sum
-from utils import unfold
-from streams import writeData, write, readChar
+from typesinfo import Context, TypeChunk, estimateBasicSize, isBasic, BodyGenerator
 import macros
 
-proc genCStringDeserialize*(name: NimNode): NimNode {.compileTime.} =
+
+proc genCStringDeserialize*(name: NimNode): NimNode {.compileTime.}
+proc genCStringSerialize*(name: NimNode): NimNode {.compileTime.}
+proc genPeriodic*(context: Context, elem: NimNode,
+                  length: BodyGenerator): TypeChunk {.compileTime.}
+
+from basics import genSerialize, genDeserialize
+from generator import genTypeChunk, STREAM_NAME
+from utils import unfold, correct_sum
+from streams import writeData, write, readChar
+
+proc genCStringDeserialize(name: NimNode): NimNode =
   quote do:
     block:
       var str = "" & `STREAM_NAME`.readChar()
@@ -15,7 +22,7 @@ proc genCStringDeserialize*(name: NimNode): NimNode {.compileTime.} =
         index += 1
       `name` = str[0..<index]
 
-proc genCStringSerialize*(name: NimNode): NimNode {.compileTime.} =
+proc genCStringSerialize(name: NimNode): NimNode =
   quote do:
     `STREAM_NAME`.writeData(`name`[0].unsafeAddr,
                             `name`.len)
@@ -29,9 +36,8 @@ proc findInChilds(a, b: NimNode): bool =
         return true
     return false
 
-proc genPeriodic*(context: Context, elem: NimNode,
-                  length: proc (s:NimNode): NimNode,
-                  ): TypeChunk =
+proc genPeriodic(context: Context, elem: NimNode,
+                 length: BodyGenerator): TypeChunk =
   let elemString = elem.repr
   let lencheck = length(newEmptyNode())
   let is_array = lencheck.kind != nnkCall

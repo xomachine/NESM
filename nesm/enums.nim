@@ -1,8 +1,13 @@
 import macros
-from nesm.typesinfo import TypeChunk, Context
-from nesm.basics import genBasic
+from typesinfo import TypeChunk, Context
 
-proc getCount*(declaration: NimNode): uint64 {.compileTime.} =
+
+proc getCount*(declaration: NimNode): uint64 {.compileTime.}
+proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}
+
+from basics import genBasic
+
+proc getCount(declaration: NimNode): uint64 =
   for c in declaration.children():
     case c.kind
     of nnkEnumFieldDef:
@@ -34,7 +39,7 @@ proc estimateEnumSize(highest: uint64): int {.compileTime.} =
   else: 0
 
 
-proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}=
+proc genEnum(context:Context, declaration: NimNode): TypeChunk =
   let count = getCount(declaration)
   let estimated = estimateEnumSize(count)
   if estimated == 0: error("Internal error while estimating enum size")

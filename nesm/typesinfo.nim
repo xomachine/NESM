@@ -36,7 +36,7 @@ type
     is_static*: bool
     swapEndian*: bool
 
-proc initContext*(): Context =
+proc initContext*(): Context {.compileTime.} =
   result.overrides.size = newSeq[SizeCapture]()
   result.overrides.sizeof = newSeq[SizeCapture]()
   result.declared = initTable[string, TypeChunk]()
@@ -44,7 +44,7 @@ proc initContext*(): Context =
   result.is_static = false
   result.swapEndian = false
 
-proc isBasic*(thetype: string): bool =
+proc isBasic*(thetype: string): bool {.compileTime.} =
   thetype in basic_types
 
 proc estimateBasicSize*(thetype: string): int {.compileTime.} =

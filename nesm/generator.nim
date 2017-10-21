@@ -1,32 +1,23 @@
 import macros
-from typesinfo import isBasic, estimateBasicSize
 from typesinfo import TypeChunk, Context
-from utils import unfold
-from tables import Table, contains, `[]`, `[]=`, initTable,
-                   pairs
-from strutils import `%`
-from sequtils import mapIt, foldl, toSeq, filterIt
 
 proc genTypeChunk*(immutableContext: Context,
                    thetype: NimNode): TypeChunk {.compileTime.}
-proc correct_sum*(part_size: NimNode): NimNode {.compileTime.}
 
 static:
   let STREAM_NAME* = !"thestream"
 
-from nesm.objects import genObject
-from nesm.basics import genBasic
-from nesm.periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
-from nesm.enums import genEnum
-from nesm.sets import genSet
+from tables import Table, contains, `[]`, `[]=`, initTable, pairs
+from sequtils import mapIt, foldl, toSeq, filterIt
+from strutils import `%`
+from utils import unfold, correct_sum
+from typesinfo import isBasic, estimateBasicSize
+from objects import genObject
+from basics import genBasic
+from periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
+from enums import genEnum
+from sets import genSet
 
-
-proc correct_sum(part_size: NimNode): NimNode =
-  if part_size.kind == nnkInfix or part_size.len == 0:
-    let result_node = newIdentNode("result")
-    result_node.infix("+=", part_size)
-  else:
-    part_size
 
 proc dig(node: NimNode, depth: Natural): NimNode {.compileTime.} =
   if depth == 0:

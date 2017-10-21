@@ -1,10 +1,12 @@
 from typesinfo import Context
-from strutils import cmpIgnoreStyle
 import macros
+
 proc splitSettingsExpr*(node: NimNode): tuple[t: NimNode, s: NimNode]
   {.compileTime.}
 proc applyOptions*(context: Context,
                    options: NimNode | seq[NimNode]): Context {.compileTime.}
+
+from strutils import cmpIgnoreStyle
 
 proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
   ## Applies given options to the `context` and returns it without changing

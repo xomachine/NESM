@@ -1,9 +1,4 @@
-from sequtils import toSeq, filterIt, mapIt
-from generator import genTypeChunk, correct_sum
-from utils import unfold
 from typesinfo import TypeChunk, Context
-from settings import applyOptions, splitSettingsExpr
-import macros
 
 type
   Field = tuple
@@ -19,6 +14,11 @@ proc caseWorkaround(tc: TypeChunk): TypeChunk {.compileTime.}
 proc evalSize(e: NimNode): BiggestInt {.compileTime.}
 proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
 
+from sequtils import toSeq, filterIt, mapIt
+from generator import genTypeChunk
+from utils import unfold, correct_sum
+from settings import applyOptions, splitSettingsExpr
+import macros
 
 proc caseWorkaround(tc: TypeChunk): TypeChunk =
   # st - type of field under case
