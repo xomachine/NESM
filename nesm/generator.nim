@@ -221,7 +221,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
       quote do:
         var `tmp` = cast[`basetype`](`source`)
         `deserialization`
-        cast[type(`r`)](`tmp`)
+        `source` = cast[type(`source`)](`tmp`)
   of nnkNilLit:
     result = context.genObject(newTree(nnkRecList, thetype))
   else:
