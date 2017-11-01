@@ -5,7 +5,7 @@ import macros
 from strutils import `%`
 from sequtils import toSeq
 from tables import contains, `[]`, `[]=`
-from streams import Stream, newStringStream
+from streams import Stream
 
 when not defined(nimdoc):
   from nesm.typesinfo import TypeChunk, Context, initContext
