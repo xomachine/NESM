@@ -38,4 +38,14 @@ suite "Converter tests":
     var b = 0.AInt
     bigEndian32(b.addr, rnw.buffer[0].addr)
     check(b == a)
-
+  test "Reusage of static":
+    toSerializable(MD5Digest, dynamic: false)
+    serializable:
+      static:
+        type Reuser = object
+          a: MD5Digest
+    let rnw = get_random_reader_n_writer()
+    let da = Reuser.deserialize(rnw)
+    rnw.setPosition(0)
+    da.serialize(rnw)
+    check(true)
