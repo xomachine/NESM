@@ -217,7 +217,6 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         `serialization`
     result.deserialize = proc(source: NimNode): NimNode =
       let deserialization = distincted.deserialize(tmp)
-      let r = !"result"
       quote do:
         var `tmp` = cast[`basetype`](`source`)
         `deserialization`
