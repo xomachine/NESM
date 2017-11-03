@@ -23,8 +23,8 @@ proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
     of "endian":
       result.swapEndian = cmpIgnoreStyle(val, $cpuEndian) != 0
     of "dynamic":
-      let code = int(cmpIgnoreStyle(val, "true") == 0) +
-                 2*int(cmpIgnoreStyle(val, "false") == 0)
+      let code = 2*int(cmpIgnoreStyle(val, "true") == 0) +
+                 int(cmpIgnoreStyle(val, "false") == 0)
       case code
       of 0: error("The dynamic property can be only 'true' or 'false' but not" &
                   val)
