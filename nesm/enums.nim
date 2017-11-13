@@ -52,9 +52,7 @@ proc genEnum(context: Context, declaration: NimNode): TypeChunk =
        if size.kind != nnkIntLit: error(intErrorMsg & size.repr, size);
        size.intVal.int)
     else:
-      (error("Incorrect amount of size options encountered", declaration);
-      0)
-       #if size.kind != nnkIntLit:
+      (error("Incorrect amount of size options encountered", declaration); 0)
   if estimated == 0:
     error("Internal error while estimating enum size", declaration)
   result = context.genBasic(estimated)
