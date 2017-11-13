@@ -51,6 +51,6 @@ proc genEnum(context:Context, declaration: NimNode): TypeChunk =
     result.deserialize = proc (source: NimNode): NimNode =
       let check = quote do:
         if $(`source`) == $(ord(`source`)) & " (invalid data!)":
-          raise newException(ValueError, "Enum value is out of range!")
+          raise newException(ValueError, "Enum value is out of range: " & $(`source`))
       newTree(nnkStmtList, olddeser(source), check)
 
