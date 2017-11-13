@@ -60,9 +60,11 @@ proc genEnum(context: Context, declaration: NimNode): TypeChunk =
   result.maxcount = count
   when not defined(disableEnumChecks):
     let olddeser = result.deserialize
+    let enumdecl = newStrLitNode(declaration.repr)
     result.deserialize = proc (source: NimNode): NimNode =
       let check = quote do:
         if $(`source`) == $(ord(`source`)) & " (invalid data!)":
-          raise newException(ValueError, "Enum value is out of range: " & $(`source`))
+          raise newException(ValueError, "Enum value is out of range: " &
+            $(`source`) & "\nCorrect values are:\n" & `enumdecl`)
       newTree(nnkStmtList, olddeser(source), check)
 
