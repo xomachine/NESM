@@ -2,6 +2,7 @@ from typesinfo import BodyGenerator, Context
 from streams import newStringStream, Stream
 from tables import `[]=`
 from generator import STREAM_NAME, genTypeChunk
+from settings import applyOptions
 import macros
 type
   ProcType = enum
@@ -77,11 +78,15 @@ proc generateProcs(context: var Context, obj: NimNode): NimNode =
   expectKind(obj, nnkTypeDef)
   expectMinLen(obj, 3)
   expectKind(obj[1], nnkEmpty)
-  let typedeclaration = if obj[0].kind == nnkPragmaExpr: obj[0][0] else: obj[0]
+  let (newcontext, typedeclaration) =
+    if obj[0].kind == nnkPragmaExpr:
+      (context.applyOptions(obj[0][1]), obj[0][0])
+    else:
+      (context, obj[0])
   let is_shared = typedeclaration.kind == nnkPostfix
   let typenode = if is_shared: typedeclaration.basename else: typedeclaration
   let body = obj[2]
-  let typeinfo = genTypeChunk(context, body)
+  let typeinfo = genTypeChunk(newcontext, body)
   context.declared[$typenode] = typeinfo
   let size_proc = makeDeclaration(typenode, size, is_shared, context.is_static,
                                   typeinfo.size)

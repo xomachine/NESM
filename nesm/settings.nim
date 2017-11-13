@@ -14,7 +14,10 @@ proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
   ## Options should be a NimNode or seq[NimNode] which contains nnkExprColonExpr
   ## nodes with key - value pairs.
   result = context
+  let pragma = type(options) is NimNode and options.kind == nnkPragma
   for option in options.items():
+    if pragma and option.kind != nnkExprColonExpr:
+      continue
     option.expectKind(nnkExprColonExpr)
     option.expectMinLen(2)
     let key = option[0].repr
@@ -35,6 +38,8 @@ proc applyOptions(context: Context, options: NimNode | seq[NimNode]): Context =
       result.overrides.size.insert((option[1], context.depth), 0)
     of "sizeof":
       result.overrides.sizeof.add((option[1], context.depth))
+    elif pragma:
+      continue
     else:
       error("Unknown setting: " & key)
 
