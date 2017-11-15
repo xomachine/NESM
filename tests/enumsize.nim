@@ -66,7 +66,7 @@ suite "Enum size evaluation with increment":
     increment_test(4294967296)
     increment_test(4294967297)
 
-from nesm import serializable
+from nesm import serializable, toSerializable
 
 template pragma_test(val: Natural) =
   block:
@@ -86,3 +86,13 @@ suite "Explicitly set size of enum":
     pragma_test(255)
     pragma_test(256)
     pragma_test(257)
+#  test "toSerializable neverfixed test":
+#    type myenum {.size: 1.} = enum
+#      a = 255
+#    toSerializable(myenum, dynamic: false)
+#    check(size(myenum) == 1)
+  test "toSerializable test":
+    type myenum {.size: 1.} = enum
+      a = 255
+    toSerializable(myenum, dynamic: false, size: 1)
+    check(size(myenum) == 1)
