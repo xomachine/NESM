@@ -90,12 +90,11 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   when defined(debug):
     hint(typedecl.symbol.getImpl().treeRepr())
   var ast = typedecl.symbol.getImpl()
-  ctx = ctx.applyOptions(settings)
+  var newctx = ctx.applyOptions(settings)
   when defined(debug):
     hint(ast.treeRepr)
-  result.add(ctx.prepare(ast))
-  ctx.is_static = false
-  ctx.swapEndian = false
+  result.add(newctx.prepare(ast))
+  ctx.declared = newctx.declared
   when defined(debug):
     hint(result.repr)
 
