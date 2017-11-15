@@ -96,6 +96,8 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   result.add(ctx.prepare(ast))
   ctx.is_static = false
   ctx.swapEndian = false
+  when defined(debug):
+    hint(result.repr)
 
 macro serializable*(typedecl: untyped): untyped =
   ## The main macro that generates code.
