@@ -49,3 +49,13 @@ suite "Converter tests":
     rnw.setPosition(0)
     da.serialize(rnw)
     check(true)
+  test "Context shadowing":
+    type
+      A = enum
+        a
+      B = enum
+        b
+    toSerializable(A, size: 1)
+    toSerializable(B, size: 1, dynamic: false)
+    check(size(a) == size(B))
+    check(size(a) == 1)
