@@ -16,9 +16,9 @@ suite "Custom periodic size":
  
     let rnw = get_reader_n_writer()
     var o: MySeq
-    o.data = random_seq_with(random(20000).int32)
+    o.data = random_seq_with(rand(20000).int32)
     o.size = o.data.len.int32
-    o.a = random(20000).int32
+    o.a = rand(20000).int32
     o.serialize(rnw)
     rnw.setPosition(0)
     let dso = MySeq.deserialize(rnw)
@@ -41,7 +41,7 @@ suite "Custom periodic size":
     var o: MyString
     o.data = get_random_string()
     o.size = o.data.len.int32
-    o.a = random(20000).int32
+    o.a = rand(20000).int32
     o.serialize(rnw)
     rnw.setPosition(0)
     let dso = MyString.deserialize(rnw)
@@ -63,7 +63,7 @@ suite "Custom periodic size":
     var o: MySeqStr
     o.data = random_seq_with(get_random_string())
     o.s = o.data.len.int32
-    o.a = random(20000).int32
+    o.a = rand(20000).int32
     o.serialize(rnw)
     rnw.setPosition(0)
     let dso = MySeqStr.deserialize(rnw)
@@ -83,11 +83,11 @@ suite "Custom periodic size":
 
     let rnw = get_reader_n_writer()
     var o: Matrix
-    o.columns = random(1..20).int32
+    o.columns = rand(1..20).int32
     proc get_line(): seq[int32] =
       result = newSeq[int32](o.columns)
       for i in 0..<o.columns:
-        result[i] = random(20000).int32
+        result[i] = rand(20000).int32
     o.data = random_seq_with(get_line())
     o.lines = o.data.len.int32
     o.serialize(rnw)
@@ -112,9 +112,9 @@ suite "Custom periodic size":
 
     let rnw = get_reader_n_writer()
     var o: Nester
-    o.a.data = random_seq_with(random(20000).int32)
+    o.a.data = random_seq_with(rand(20000).int32)
     o.a.dsize = o.a.data.len.int32
-    o.a.a = random(20000).int32
+    o.a.a = rand(20000).int32
     o.serialize(rnw)
     rnw.setPosition(0)
     let dso = Nester.deserialize(rnw)
@@ -134,7 +134,7 @@ suite "Custom periodic size":
     let rnw = get_reader_n_writer()
     var o: NestedTuple
     o.data.name = get_random_string()
-    o.data.code = random_seq_with(random(20000).int32)
+    o.data.code = random_seq_with(rand(20000).int32)
     o.length = o.data.code.len.int32
     o.serialize(rnw)
     rnw.setPosition(0)

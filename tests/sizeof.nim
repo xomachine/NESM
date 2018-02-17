@@ -14,9 +14,9 @@ suite "{sizeof: x}":
 
     let rnw = get_reader_n_writer()
     var o: Basic
-    o.data = random_seq_with(random(20000).int32)
+    o.data = random_seq_with(rand(20000).int32)
     o.size = 0
-    o.a = random(20000).int32
+    o.a = rand(20000).int32
     o.serialize(rnw)
     rnw.setPosition(0)
     let dso = Basic.deserialize(rnw)
@@ -32,9 +32,9 @@ suite "{sizeof: x}":
         data: seq[int32] as {size: {}.size}
     let rnw = get_reader_n_writer()
     var o: CR
-    o.data = random_seq_with(random(20000).int32)
+    o.data = random_seq_with(rand(20000).int32)
     o.size = 0
-    o.someval = random(20000).int64
+    o.someval = rand(20000).int64
     o.serialize(rnw)
     rnw.setPosition(0)
     let dso = CR.deserialize(rnw)
