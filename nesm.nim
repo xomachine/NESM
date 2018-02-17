@@ -9,6 +9,7 @@ from streams import Stream
 
 when not defined(nimdoc):
   from nesm.typesinfo import TypeChunk, Context, initContext
+  from nesm.generator import genTypeChunk
   from nesm.procgen import generateProcs
   from nesm.settings import applyOptions, splitSettingsExpr
 else:
@@ -72,6 +73,36 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
     else:
       children.add(cleanupTypeDeclaration(c))
   newTree(declaration.kind, children)
+
+macro nonIntrusiveBody(typename: typed, o: untyped, de: static[bool]): untyped =
+  let typebody = getTypeImpl(typename)
+  when defined(debug):
+    hint("Deserialize? " & $de)
+    hint(typebody.treeRepr)
+    hint(typebody.repr)
+  let chunk = ctx.genTypeChunk(typebody)
+  result = if de: chunk.deserialize(o) else: chunk.serialize(o)
+  when defined(debug):
+    hint(result.repr)
+
+template nonIntrusiveTemplate[S](o: S, de: static[bool]) =
+  nonIntrusiveBody(S, o, de)
+
+proc serialize*[T](obj: T, thestream: Stream) =
+  ## The non-intrusive serialize proc which allows to perform object
+  ## serialization without special declaration.
+  ## The negative side-effect of such approach is inability to pass any options
+  ## (like `endian` or `dynamic`) to the serializer and lack of nested objects
+  ## support. This proc should be imported directly.
+  nonIntrusiveTemplate(obj, false)
+
+proc deserialize*[T](thestream: Stream): T =
+  ## The non-intrusive deserialize proc which allows to perform object
+  ## deserialization without special declaration.
+  ## The negative side-effect of such approach is inability to pass any options
+  ## (like `endian` or `dynamic`) to the serializer and lack of nested objects
+  ## support. This proc should be imported directly.
+  nonIntrusiveTemplate(result, true)
 
 macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   ## Generate [de]serialize procedures for existing type with given settings.
