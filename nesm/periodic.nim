@@ -107,7 +107,7 @@ proc genPeriodic(context: Context, elem: NimNode,
     result.size = proc(s:NimNode):NimNode =
       let presize = preresult.size(s)
       let headersize = size_header_chunk.size(s)
-      let r = !"result"
+      let r = newIdentNode("result")
       if presize.kind notin [nnkInfix, nnkIntLit, nnkCall]:
         quote do:
           `presize`

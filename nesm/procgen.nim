@@ -61,7 +61,7 @@ proc makeDeserializeStreamConversion(typenode: NimNode,
   ## Makes overloaded deserialize proc which takes ``string`` as input instead
   ## of ``Stream``
   let rawprocname = newIdentNode("deserialize")
-  let sizeident = !("size")
+  let sizeident = newIdentNode("size")
   let procname = if is_exported: rawprocname.postfix("*") else: rawprocname
   quote do:
     proc `procname`(a: typedesc[`typenode`],

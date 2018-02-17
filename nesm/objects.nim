@@ -79,7 +79,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
     result = newIntLitNode(0)
     var result_list = newSeq[NimNode]()
     for i in elems.items():
-      let n = !i.name
+      let n = newIdentNode(i.name)
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).unfold()
         else: source
@@ -98,7 +98,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
   result.serialize = proc(source: NimNode): NimNode =
     result = newStmtList(parseExpr("discard"))
     for i in elems.items():
-      let n = !i.name
+      let n = newIdentNode(i.name)
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).unfold()
         else: source
@@ -107,7 +107,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
   result.deserialize = proc(source: NimNode): NimNode =
     result = newStmtList(parseExpr("discard"))
     for i in elems.items():
-      let n = !i.name
+      let n = newIdentNode(i.name)
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).unfold()
         else: source

@@ -5,7 +5,7 @@ proc genTypeChunk*(immutableContext: Context,
                    thetype: NimNode): TypeChunk {.compileTime.}
 
 static:
-  let STREAM_NAME* = !"thestream"
+  let STREAM_NAME* = newIdentNode("thestream")
 
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from sequtils import mapIt, foldl, toSeq, filterIt
