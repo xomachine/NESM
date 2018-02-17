@@ -2,6 +2,7 @@ import macros
 
 proc unfold*(node: NimNode): NimNode {.compileTime.}
 proc correct_sum*(part_size: NimNode): NimNode {.compileTime.}
+proc onlyname*(node: NimNode): NimNode {.compileTime.}
 
 proc correct_sum(part_size: NimNode): NimNode =
   if part_size.kind == nnkInfix or part_size.len == 0:
@@ -12,4 +13,9 @@ proc correct_sum(part_size: NimNode): NimNode =
 
 proc unfold(node: NimNode): NimNode =
   if node.kind == nnkStmtList and node.len == 1: node.last
+  else: node
+
+proc onlyname(node: NimNode): NimNode =
+  case node.kind
+  of nnkIdent, nnkPrefix, nnkPostfix: node.basename
   else: node

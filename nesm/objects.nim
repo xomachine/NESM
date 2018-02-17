@@ -16,7 +16,7 @@ proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
 
 from sequtils import toSeq, filterIt, mapIt
 from generator import genTypeChunk
-from utils import unfold, correct_sum
+from utils import unfold, correct_sum, onlyname
 from settings import applyOptions, splitSettingsExpr
 import macros
 
@@ -128,11 +128,11 @@ proc genFields(context: Context, decl: NimNode): FieldChunk =
   for i in 0..<last:
     if decl[i].kind != nnkPostfix:
       result.has_hidden = true
-    let name = $decl[i].basename
+    let name = $decl[i].onlyname
     result.entries.add((name: name, chunk: chunk))
 
 proc genCase(context: Context, decl: NimNode): TypeChunk =
-  let checkable = decl[0][0].basename
+  let checkable = decl[0][0].onlyname
   let eachbranch = proc(b: NimNode): auto =
     let children = toSeq(b.children)
     let conditions = children[0..^2]
