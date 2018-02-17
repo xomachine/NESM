@@ -1,6 +1,10 @@
 
 from sequtils import newSeqWith
-from random import rand
+when NimMajor > 0 or NimMinor > 17 or (NimMinor == 17 and NimPatch > 2):
+  from random import rand
+else:
+  from random import random
+  proc rand[T](a: T): int = random(a)
 from streams import Stream, StringStream, newStringStream
 
 export rand
