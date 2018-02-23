@@ -1,5 +1,8 @@
 #
 # NTP client demo
+# ---------------
+# Makes a request to ntp server and shows information.
+# All serialization/deserialization work is being performed by NESM.
 #
 
 import
@@ -12,32 +15,19 @@ import
 
 import NESM
 
-# 1900 to 1970 in seconds
-const unix_time_delta = 2208988800.0
-
-proc to_host(x: uint32): uint32 = ntohl(x)
-
-proc to_net(x: uint32): uint32 =
-  htonl(x)
 
 serializable:
   static:
+  # Types are static, so their size after serialization
+  # can be calculated at compile time
     type
-      nuint16 = distinct uint16
-      nint16  = distinct int16
-      nuint32 = distinct uint32
-      nint32  = distinct int32
-      nuint64 = distinct uint64
-      nint64  = distinct int64
-
       FixedPoint16dot16 = uint32
-      seconds = distinct nuint32
-      fraction = distinct nuint32
-      FixedPoint32dot32 = object
-        seconds: uint32
-        fraction: uint32
 
       NTPTimeStamp = object
+        set: {endian: bigEndian}
+        # The endian of following fields is set to bigEndian,
+        # so following values will be swapped while serialization
+        # and there is no necessity to use htonl/ntohl
         seconds: uint32
         fraction: uint32
 
@@ -56,67 +46,65 @@ serializable:
         receive_ts: NTPTimeStamp
         transmit_ts: NTPTimeStamp
 
+const twoto32 = 4294967296.0
+const packet_size = NTPPacket.size() # Compile-time type size calculation
+const unix_time_delta = 2208988800.0 # 1900 to 1970 in seconds
 
-proc ntp_ts_to_epoch(ts: NTPTimeStamp): float64 =
-  const twoto32 = 4294967296.0
+proc toEpoch(ts: NTPTimeStamp): float64 =
   let
-    sec = ts.seconds.to_host.float - unix_time_delta
-    frac = ts.fraction.to_host.float / twoto32
+    sec = ts.seconds.float - unix_time_delta
+    frac = ts.fraction.float / twoto32
   sec + frac
 
-proc epoch_to_ntp_ts(x: float): NTPTimeStamp =
+proc fromEpoch(epoch: float64): NTPTimeStamp =
+  let secs = epoch.uint32
+  NTPTimeStamp(seconds: secs,
+               fraction: uint32((epoch - secs.float) * twoto32))
 
-  result = NTPTimeStamp(
-    seconds: uint32(x).to_net()
-  )
-
-const packet_size = NTPPacket.size()
-assert packet_size == 48
-
-proc main() =
+when isMainModule:
   if paramCount() != 1:
     echo "Usage $# <ipaddr>" % paramStr(0)
     quit(1)
 
   let target = paramStr(1)
-
-  var b = NTPPacket()
+  let b = NTPPacket(
 
   # example values
-  b.leap_version_mode = 0x23
-  b.stratum = 0x03
-  b.polling_interval = 0x06
-  b.clock_precision = 0xfa
-  b.delay = 0x00010000
-  b.dispersion = 0x00010000
-  b.reference_id = 0xaabbcc
-  b.origin_ts = epochTime().epoch_to_ntp_ts
+    leap_version_mode: 0x23,
+    stratum: 0x03,
+    polling_interval: 0x06,
+    clock_precision: 0xfa,
+    delay: 0x00010000,
+    dispersion: 0x00010000,
+    reference_id: 0xaabbcc,
+    origin_ts: epochTime().fromEpoch,
+  )
 
   let bytes = cast[string](b.serialize())
 
   var socket = newSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, true)
   # client send time
-  let t1 = epochTime()
+  let sendtime = epochTime()
   doAssert socket.sendTo(target, Port(123), bytes) == packet_size
 
   let raw_resp = socket.recv(packet_size, timeout=1000)
 
   # client receive time
-  let t4 = epochTime()
+  let resptime = epochTime()
 
   assert raw_resp.len == packet_size
   let resp: NTPPacket = deserialize(NTPPacket, raw_resp)
 
-  let t2 =  resp.receive_ts.ntp_ts_to_epoch
-  let t3 = resp.transmit_ts.ntp_ts_to_epoch
+  let recvtime =  resp.receive_ts.toEpoch
+  let anstime = resp.transmit_ts.toEpoch
 
   # NTP delay / clock_offset calculation
-  let delay = (t4 - t1) - (t3 - t2)
-  let clock_offset = (t2 - t1 + t3 - t4)/2
+  let delay = (resptime - sendtime) - (anstime - recvtime)
+  let clock_offset = (recvtime - sendtime + anstime - resptime)/2
 
-  echo "delay:       ", delay * 1000, " ms"
-  echo "clock_offset ", clock_offset * 1000, " ms"
-
-
-when isMainModule:
-  main()
+  echo " Request sent:     ", sendtime
+  echo " Request received: ", recvtime
+  echo " Answer sent:      ", anstime
+  echo " Answer received:  ", resptime
+  echo " Round-trip delay: ", delay * 1000, " ms"
+  echo " Clock offset:     ", clock_offset * 1000, " ms"
