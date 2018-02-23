@@ -6,12 +6,14 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <!-- Favicon -->
 <link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AAAAAAUAAAAF////AP///wD///8A////AP///wD///8A////AP///wD///8A////AAAAAAIAAABbAAAAlQAAAKIAAACbAAAAmwAAAKIAAACVAAAAWwAAAAL///8A////AP///wD///8A////AAAAABQAAADAAAAAYwAAAA3///8A////AP///wD///8AAAAADQAAAGMAAADAAAAAFP///wD///8A////AP///wAAAACdAAAAOv///wD///8A////AP///wD///8A////AP///wD///8AAAAAOgAAAJ3///8A////AP///wAAAAAnAAAAcP///wAAAAAoAAAASv///wD///8A////AP///wAAAABKAAAAKP///wAAAABwAAAAJ////wD///8AAAAAgQAAABwAAACIAAAAkAAAAJMAAACtAAAAFQAAABUAAACtAAAAkwAAAJAAAACIAAAAHAAAAIH///8A////AAAAAKQAAACrAAAAaP///wD///8AAAAARQAAANIAAADSAAAARf///wD///8AAAAAaAAAAKsAAACk////AAAAADMAAACcAAAAnQAAABj///8A////AP///wAAAAAYAAAAGP///wD///8A////AAAAABgAAACdAAAAnAAAADMAAAB1AAAAwwAAAP8AAADpAAAAsQAAAE4AAAAb////AP///wAAAAAbAAAATgAAALEAAADpAAAA/wAAAMMAAAB1AAAAtwAAAOkAAAD/AAAA/wAAAP8AAADvAAAA3gAAAN4AAADeAAAA3gAAAO8AAAD/AAAA/wAAAP8AAADpAAAAtwAAAGUAAAA/AAAA3wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAADfAAAAPwAAAGX///8A////AAAAAEgAAADtAAAAvwAAAL0AAADGAAAA7wAAAO8AAADGAAAAvQAAAL8AAADtAAAASP///wD///8A////AP///wD///8AAAAAO////wD///8A////AAAAAIcAAACH////AP///wD///8AAAAAO////wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A//8AAP//AAD4HwAA7/cAAN/7AAD//wAAoYUAAJ55AACf+QAAh+EAAAAAAADAAwAA4AcAAP5/AAD//wAA//8AAA=="/>
 
 <!-- Google fonts -->
-<link href='http://fonts.googleapis.com/css?family=Raleway:400,600,900' rel='stylesheet' type='text/css'/>
-<link href='http://fonts.googleapis.com/css?family=Source+Code+Pro:400,500,600' rel='stylesheet' type='text/css'/>
+<link href='https://fonts.googleapis.com/css?family=Lato:400,600,900' rel='stylesheet' type='text/css'/>
+<link href='https://fonts.googleapis.com/css?family=Source+Code+Pro:400,500,600' rel='stylesheet' type='text/css'/>
 
 <!-- CSS -->
 <title>Module nesm</title>
@@ -43,18 +45,19 @@ html {
 
 /* Where we want fancier font if available */
 h1, h2, h3, h4, h5, h6, p.module-desc, table.docinfo + blockquote p, table.docinfo blockquote p, h1 + blockquote p {
-  font-family: "Raleway", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif !important; }
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif !important; }
 
 h1.title {
   font-weight: 900; }
 
 body {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif;
   font-weight: 400;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 20px;
-  color: #666;
-  background-color: rgba(252, 248, 244, 0.75); }
+  color: #444;
+  letter-spacing: 0.15px;
+  background-color: rgba(252, 248, 244, 0.45); }
 
 /* Skeleton grid */
 .container {
@@ -170,8 +173,8 @@ cite {
   font-style: italic !important; }
 
 dt > pre {
-  border-color: rgba(0, 0, 0, 0.15);
-  background-color: transparent;
+  border-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.3);
   margin: 15px 0px 5px; }
 
 dd > pre {
@@ -187,6 +190,17 @@ dd > pre {
 .line-nums-table {
   width: 100%;
   table-layout: fixed; }
+
+/* Nim search input */
+div#searchInput {
+  margin-bottom: 8px;
+}
+div#searchInput input#searchInput {
+  width: 10em;
+}
+div.search-groupby {
+  margin-bottom: 8px;
+}
 
 table.line-nums-table {
   border-radius: 4px;
@@ -331,7 +345,7 @@ img {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
 
 p {
-  margin: 0 0 12px; }
+  margin: 0 0 8px; }
 
 small {
   font-size: 85%; }
@@ -351,7 +365,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif;
   font-weight: 600;
   line-height: 20px;
   color: inherit;
@@ -359,6 +373,7 @@ h6 {
 
 h1 {
   font-size: 2em;
+  font-weight: 400;
   padding-bottom: .15em;
   border-bottom: 1px solid #aaaaaa;
   margin-top: 1.0em;
@@ -489,13 +504,13 @@ pre {
   box-sizing: border-box;
   min-width: calc(100% - 19.5px);
   padding: 9.5px;
-  margin: 0.25em 10px 0.25em 10px;
-  font-size: 14px;
+  margin: 0.25em 10px 10px 10px;
+  font-size: 15px;
   line-height: 20px;
   white-space: pre !important;
   overflow-y: hidden;
   overflow-x: visible;
-  background-color: whitesmoke;
+  background-color: rgba(0, 0, 0, 0.01);
   border: 1px solid #cccccc;
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
@@ -774,14 +789,14 @@ div.admonition p.admonition-title, div.hint p.admonition-title,
 div.important p.admonition-title, div.note p.admonition-title,
 div.tip p.admonition-title {
   font-weight: bold;
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif; }
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif; }
 
 div.attention p.admonition-title, div.caution p.admonition-title,
 div.danger p.admonition-title, div.error p.admonition-title,
 div.warning p.admonition-title, .code .error {
   color: #b30000;
   font-weight: bold;
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif; }
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif; }
 
 /* Uncomment (and remove this text!) to get reduced vertical space in
    compound paragraphs.
@@ -828,7 +843,7 @@ div.sidebar {
   clear: right; }
 
 div.sidebar p.rubric {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif;
   font-size: medium; }
 
 div.system-messages {
@@ -935,12 +950,12 @@ p.rubric {
   text-align: center; }
 
 p.sidebar-title {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif;
   font-weight: bold;
   font-size: larger; }
 
 p.sidebar-subtitle {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif;
   font-weight: bold; }
 
 p.topic-title {
@@ -982,15 +997,15 @@ pre.code .inserted, code .inserted {
   background-color: #A3D289; }
 
 span.classifier {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif;
   font-style: oblique; }
 
 span.classifier-delimiter {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif;
   font-weight: bold; }
 
 span.interpreted {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Raleway", Helvetica, Arial, sans-serif; }
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif; }
 
 span.option {
   white-space: nowrap; }
@@ -1013,7 +1028,7 @@ table.docinfo {
   margin: 0em;
   margin-top: 2em;
   margin-bottom: 2em;
-  font-family: "Raleway", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif !important;
+  font-family: "Lato", "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, sans-serif !important;
   color: #444444; }
 
 table.docutils {
@@ -1143,21 +1158,26 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   background-repeat: no-repeat;
   background-image: url("data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AAAAAAUAAAAF////AP///wD///8A////AP///wD///8A////AP///wD///8A////AAAAAAIAAABbAAAAlQAAAKIAAACbAAAAmwAAAKIAAACVAAAAWwAAAAL///8A////AP///wD///8A////AAAAABQAAADAAAAAYwAAAA3///8A////AP///wD///8AAAAADQAAAGMAAADAAAAAFP///wD///8A////AP///wAAAACdAAAAOv///wD///8A////AP///wD///8A////AP///wD///8AAAAAOgAAAJ3///8A////AP///wAAAAAnAAAAcP///wAAAAAoAAAASv///wD///8A////AP///wAAAABKAAAAKP///wAAAABwAAAAJ////wD///8AAAAAgQAAABwAAACIAAAAkAAAAJMAAACtAAAAFQAAABUAAACtAAAAkwAAAJAAAACIAAAAHAAAAIH///8A////AAAAAKQAAACrAAAAaP///wD///8AAAAARQAAANIAAADSAAAARf///wD///8AAAAAaAAAAKsAAACk////AAAAADMAAACcAAAAnQAAABj///8A////AP///wAAAAAYAAAAGP///wD///8A////AAAAABgAAACdAAAAnAAAADMAAAB1AAAAwwAAAP8AAADpAAAAsQAAAE4AAAAb////AP///wAAAAAbAAAATgAAALEAAADpAAAA/wAAAMMAAAB1AAAAtwAAAOkAAAD/AAAA/wAAAP8AAADvAAAA3gAAAN4AAADeAAAA3gAAAO8AAAD/AAAA/wAAAP8AAADpAAAAtwAAAGUAAAA/AAAA3wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAADfAAAAPwAAAGX///8A////AAAAAEgAAADtAAAAvwAAAL0AAADGAAAA7wAAAO8AAADGAAAAvQAAAL8AAADtAAAASP///wD///8A////AP///wD///8AAAAAO////wD///8A////AAAAAIcAAACH////AP///wD///8AAAAAO////wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A//8AAP//AAD4HwAA7/cAAN/7AAD//wAAoYUAAJ55AACf+QAAh+EAAAAAAADAAwAA4AcAAP5/AAD//wAA//8AAA==");
   margin-bottom: -5px; }
-  div.pragma {
-    display: none;
-  }
-  span.pragmabegin {
-    cursor: pointer;
-  }
-  span.pragmaend {
-    cursor: pointer;
-  }
+div.pragma {
+  display: none;
+}
+span.pragmabegin {
+  cursor: pointer;
+}
+span.pragmaend {
+  cursor: pointer;
+}
 
 div.search_results {
   background-color: antiquewhite;
   margin: 3em;
   padding: 1em;
   border: 1px solid #4d4d4d;
+}
+
+div#global-links ul {
+  margin-left: 0;
+  list-style-type: none;
 }
 </style>
 
@@ -1196,7 +1216,11 @@ function main() {
     <h1 class="title">Module nesm</h1>
     <div class="row">
   <div class="three columns">
-  <div>
+  <div id="global-links">
+    <ul class="simple">
+    </ul>
+  </div>
+  <div id="searchInput">
     Search: <input type="text" id="searchInput"
       onkeyup="search()" />
   </div>
@@ -1209,9 +1233,11 @@ function main() {
   </div>
   <ul class="simple simple-toc" id="toc-list">
 <li><a class="reference" id="static-types_toc" href="#static-types">Static types</a></li>
+<li><a class="reference" id="serialization-options_toc" href="#serialization-options">Serialization options</a></li>
 <li><a class="reference" id="endianness-switching_toc" href="#endianness-switching">Endianness switching</a></li>
-<li><a class="reference" id="usage-of-int-float-uint-types-without-size-specifier_toc" href="#usage-of-int-float-uint-types-without-size-specifier">Usage of int, float, uint types without size specifier</a></li>
 <li><a class="reference" id="converting-existent-types-to-serializable_toc" href="#converting-existent-types-to-serializable">Converting existent types to serializable</a></li>
+<li><a class="reference" id="customizing-seq-and-string-serialization-schemas_toc" href="#customizing-seq-and-string-serialization-schemas">Customizing seq and string serialization schemas</a></li>
+<li><a class="reference" id="usage-of-int-float-uint-types-without-size-specifier_toc" href="#usage-of-int-float-uint-types-without-size-specifier">Usage of int, float, uint types without size specifier</a></li>
 <li><a class="reference" id="enum-correctness-checking_toc" href="#enum-correctness-checking">Enum correctness checking</a></li>
 <li><a class="reference" id="future-ideas_toc" href="#future-ideas">Future ideas</a></li>
 <li>
@@ -1232,7 +1258,7 @@ function main() {
   <a class="reference reference-toplevel" href="#12" id="62">Procs</a>
   <ul class="simple simple-toc-section">
       <li><a class="reference" href="#size,typedesc[TheType]"
-    title="size[](thetype: typedesc[TheType]): int"><wbr />size<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
+    title="size(thetype: typedesc[TheType]): int"><wbr />size<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
   <li><a class="reference" href="#size,TheType"
     title="size(thetype: TheType): int"><wbr />size<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
   <li><a class="reference" href="#serialize,TheType,Stream"
@@ -1240,15 +1266,19 @@ function main() {
   <li><a class="reference" href="#serialize,TheType"
     title="serialize(obj: TheType): string"><wbr />serialize<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
   <li><a class="reference" href="#deserialize,typedesc[TheType],Stream"
-    title="deserialize[](thetype: typedesc[TheType]; stream: Stream): TheType"><wbr />deserialize<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
+    title="deserialize(thetype: typedesc[TheType]; stream: Stream): TheType"><wbr />deserialize<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
   <li><a class="reference" href="#deserialize,typedesc[TheType],"
-    title="deserialize[](thetype: typedesc[TheType];
-              data: string | seq[byte | char | int8 | uint8]): TheType"><wbr />deserialize<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
+    title="deserialize(thetype: typedesc[TheType];
+            data: string | seq[byte | char | int8 | uint8]): TheType"><wbr />deserialize<span class="attachedType" style="visibility:hidden">TheType</span></a></li>
+  <li><a class="reference" href="#serialize,T,Stream"
+    title="serialize[T](obj: T; thestream: Stream)"><wbr />serialize<span class="attachedType" style="visibility:hidden"></span></a></li>
+  <li><a class="reference" href="#deserialize,Stream"
+    title="deserialize[T](thestream: Stream): T"><wbr />deserialize<span class="attachedType" style="visibility:hidden"></span></a></li>
 
   </ul>
 </li>
 <li>
-  <a class="reference reference-toplevel" href="#16" id="66">Macros</a>
+  <a class="reference reference-toplevel" href="#17" id="67">Macros</a>
   <ul class="simple simple-toc-section">
       <li><a class="reference" href="#toSerializable.m,typed,varargs[untyped]"
     title="toSerializable(typedecl: typed; settings: varargs[untyped]): untyped"><wbr />to<wbr />Serializable<span class="attachedType" style="visibility:hidden"></span></a></li>
@@ -1265,13 +1295,13 @@ function main() {
   <div id="tocRoot"></div>
   <p class="module-desc"><p><strong>NESM</strong> is a tool that generates serialization and deserialization code for a given object. This library provides a macro called <cite>serializable</cite> inside which the object description should be placed.</p>
 <p>For example:</p>
-<pre class = "listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
   <span class="Keyword">type</span> <span class="Identifier">Ball</span> <span class="Operator">=</span> <span class="Keyword">object</span>
     <span class="Identifier">weight</span><span class="Punctuation">:</span> <span class="Identifier">float32</span>
     <span class="Identifier">diameter</span><span class="Punctuation">:</span> <span class="Identifier">int32</span>
     <span class="Identifier">isHollow</span><span class="Punctuation">:</span> <span class="Identifier">bool</span></pre><p>In this example you could notice that <cite>int32</cite> and <cite>float32</cite> declarations are used instead of just <cite>int</cite> and <cite>float</cite>. It is necessary to avoid an ambiguity in declarations on different platforms.</p>
 <p>The code in example will be transformed into the following code (the resulting code can be seen when <strong>-d:debug</strong> is passed to Nim compiler):</p>
-<pre class = "listing"><span class="Keyword">type</span>
+<pre class="listing"><span class="Keyword">type</span>
   <span class="Identifier">Ball</span> <span class="Operator">=</span> <span class="Keyword">object</span>
     <span class="Identifier">weight</span><span class="Punctuation">:</span> <span class="Identifier">float32</span>
     <span class="Identifier">diameter</span><span class="Punctuation">:</span> <span class="Identifier">int32</span>
@@ -1307,22 +1337,22 @@ function main() {
           <span class="StringLit">&quot;Stream was not provided enough data&quot;</span><span class="Punctuation">)</span></pre><p>As you may see from the code above, the macro generates three kinds of procedures: serializer, deserializer and size estimator. The serialization is being performed in a following way: each memory region of variable is copied to the resulting stream back-to-back. This approach achieves both of smallest serialized object size and independence from the compilator specific object representation.</p>
 <p>At the moment the following types of object are supported:</p>
 <ul class="simple"><li><dl class="docutils"><dt>Aliases from basic types or previously defined in this block:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">MyInt</span> <span class="Operator">=</span> <span class="Identifier">int16</span></pre></dd>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">MyInt</span> <span class="Operator">=</span> <span class="Identifier">int16</span></pre></dd>
 </dl>
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Distinct types from basic types or previously defined in this block:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">MyInt</span> <span class="Operator">=</span> <span class="Keyword">distinct</span> <span class="Identifier">int16</span></pre></dd>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">MyInt</span> <span class="Operator">=</span> <span class="Keyword">distinct</span> <span class="Identifier">int16</span></pre></dd>
 </dl>
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Tuples, objects and arrays:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">MyTuple</span> <span class="Operator">=</span> <span class="Keyword">tuple</span><span class="Punctuation">[</span><span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">float64</span><span class="Punctuation">,</span> <span class="Identifier">b</span><span class="Punctuation">:</span> <span class="Identifier">int64</span><span class="Punctuation">]</span></pre></dd>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">MyTuple</span> <span class="Operator">=</span> <span class="Keyword">tuple</span><span class="Punctuation">[</span><span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">float64</span><span class="Punctuation">,</span> <span class="Identifier">b</span><span class="Punctuation">:</span> <span class="Identifier">int64</span><span class="Punctuation">]</span></pre></dd>
 </dl>
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Nested objects defined in <em>serializable</em> block:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">MyNestedObject</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">MyNestedObject</span> <span class="Operator">=</span> <span class="Keyword">object</span>
   <span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">float64</span>
   <span class="Identifier">b</span><span class="Punctuation">:</span> <span class="Identifier">int64</span>
 <span class="Keyword">type</span> <span class="Identifier">MyObject</span> <span class="Operator">=</span> <span class="Keyword">object</span>
@@ -1332,23 +1362,23 @@ function main() {
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Nested arrays and tuples:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">Matrix</span> <span class="Operator">=</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="FloatNumber">0.</span><span class="Operator">.</span><span class="DecNumber">4</span><span class="Punctuation">,</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="FloatNumber">0.</span><span class="Operator">.</span><span class="DecNumber">4</span><span class="Punctuation">,</span> <span class="Identifier">int32</span><span class="Punctuation">]</span><span class="Punctuation">]</span></pre></dd>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">Matrix</span> <span class="Operator">=</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="FloatNumber">0.</span><span class="Operator">.</span><span class="DecNumber">4</span><span class="Punctuation">,</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="FloatNumber">0.</span><span class="Operator">.</span><span class="DecNumber">4</span><span class="Punctuation">,</span> <span class="Identifier">int32</span><span class="Punctuation">]</span><span class="Punctuation">]</span></pre></dd>
 </dl>
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Sequencies and strings:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">MySeq</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">MySeq</span> <span class="Operator">=</span> <span class="Keyword">object</span>
   <span class="Identifier">data</span><span class="Punctuation">:</span> <span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">string</span><span class="Punctuation">]</span></pre></dd>
 </dl>
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Null terminated strings (3-byte smaller but slower than strings):</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">NTString</span> <span class="Operator">=</span> <span class="Identifier">cstring</span></pre></dd>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">NTString</span> <span class="Operator">=</span> <span class="Identifier">cstring</span></pre></dd>
 </dl>
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Object variants with nested case statements:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">Variant</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">Variant</span> <span class="Operator">=</span> <span class="Keyword">object</span>
   <span class="Keyword">case</span> <span class="Identifier">has_sign</span><span class="Punctuation">:</span> <span class="Identifier">bool</span>
   <span class="Keyword">of</span> <span class="Identifier">true</span><span class="Punctuation">:</span>
     <span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">int32</span>
@@ -1364,7 +1394,7 @@ function main() {
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Enumerates:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">Enumerate</span> <span class="Operator">=</span> <span class="Keyword">enum</span>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">Enumerate</span> <span class="Operator">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">A</span>
   <span class="Identifier">B</span> <span class="Operator">=</span> <span class="StringLit">&quot;It's B&quot;</span>
   <span class="Identifier">C</span> <span class="Operator">=</span> <span class="Punctuation">(</span><span class="DecNumber">233</span><span class="Punctuation">,</span> <span class="StringLit">&quot;C is here&quot;</span><span class="Punctuation">)</span>
@@ -1373,7 +1403,7 @@ function main() {
 </li>
 </ul>
 <ul class="simple"><li><dl class="docutils"><dt>Sets:</dt>
-<dd><pre class = "listing"><span class="Keyword">type</span> <span class="Identifier">CharSet</span> <span class="Operator">=</span> <span class="Identifier">set</span><span class="Punctuation">[</span><span class="Identifier">char</span><span class="Punctuation">]</span></pre></dd>
+<dd><pre class="listing"><span class="Keyword">type</span> <span class="Identifier">CharSet</span> <span class="Operator">=</span> <span class="Identifier">set</span><span class="Punctuation">[</span><span class="Identifier">char</span><span class="Punctuation">]</span></pre></dd>
 </dl>
 </li>
 </ul>
@@ -1384,14 +1414,14 @@ function main() {
 <li>any dynamic structures like sequencies or strings will lead to compile time errors (because their size can not be estimated at compile time)</li>
 </ul>
 <p>The example above with <cite>static</cite> section will be look like:</p>
-<pre class = "listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
   <span class="Keyword">static</span> <span class="Punctuation">:</span>
       <span class="Keyword">type</span>
         <span class="Identifier">Ball</span> <span class="Operator">=</span> <span class="Keyword">object</span>
           <span class="Identifier">weight</span><span class="Punctuation">:</span> <span class="Identifier">float32</span>
           <span class="Identifier">diameter</span><span class="Punctuation">:</span> <span class="Identifier">int32</span>
           <span class="Identifier">isHollow</span><span class="Punctuation">:</span> <span class="Identifier">bool</span></pre><p>And the differeces will occur in following procedures:</p>
-<pre class = "listing"><span class="Keyword">proc</span> <span class="Identifier">size</span><span class="Punctuation">(</span><span class="Identifier">thetype</span><span class="Punctuation">:</span> <span class="Identifier">typedesc</span><span class="Punctuation">[</span><span class="Identifier">Ball</span><span class="Punctuation">]</span><span class="Punctuation">)</span><span class="Punctuation">:</span> <span class="Identifier">int</span> <span class="Operator">=</span>
+<pre class="listing"><span class="Keyword">proc</span> <span class="Identifier">size</span><span class="Punctuation">(</span><span class="Identifier">thetype</span><span class="Punctuation">:</span> <span class="Identifier">typedesc</span><span class="Punctuation">[</span><span class="Identifier">Ball</span><span class="Punctuation">]</span><span class="Punctuation">)</span><span class="Punctuation">:</span> <span class="Identifier">int</span> <span class="Operator">=</span>
   <span class="Punctuation">(</span><span class="DecNumber">0</span> <span class="Operator">+</span> <span class="DecNumber">4</span> <span class="Operator">+</span> <span class="DecNumber">4</span> <span class="Operator">+</span> <span class="DecNumber">1</span><span class="Punctuation">)</span>
 
 <span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Punctuation">(</span><span class="Identifier">thetype</span><span class="Punctuation">:</span> <span class="Identifier">typedesc</span><span class="Punctuation">[</span><span class="Identifier">Ball</span><span class="Punctuation">]</span><span class="Punctuation">;</span>
@@ -1400,8 +1430,27 @@ function main() {
       <span class="Operator">$</span> <span class="Punctuation">(</span><span class="Keyword">type</span><span class="Punctuation">(</span><span class="Identifier">result</span><span class="Punctuation">)</span><span class="Operator">.</span><span class="Identifier">size</span><span class="Punctuation">(</span><span class="Punctuation">)</span><span class="Punctuation">)</span> <span class="Operator">&amp;</span> <span class="StringLit">&quot; bytes!&quot;</span><span class="Punctuation">)</span>
   <span class="Keyword">let</span> <span class="Identifier">ss142004</span> <span class="Operator">=</span> <span class="Identifier">newStringStream</span><span class="Punctuation">(</span><span class="Keyword">cast</span><span class="Punctuation">[</span><span class="Identifier">string</span><span class="Punctuation">]</span><span class="Punctuation">(</span><span class="Identifier">data</span><span class="Punctuation">)</span><span class="Punctuation">)</span>
   <span class="Identifier">deserialize</span><span class="Punctuation">(</span><span class="Keyword">type</span><span class="Punctuation">(</span><span class="Identifier">result</span><span class="Punctuation">)</span><span class="Punctuation">,</span> <span class="Identifier">ss142004</span><span class="Punctuation">)</span></pre>
-<h1><a class="toc-backref" id="endianness-switching" href="#endianness-switching">Endianness switching</a></h1><p>There is a way exists to set which endian should be used while [de]serialization particular structure or part of the structure. A special syntax <strong>set: {endian: &lt;value&gt;}</strong> allows to set the endian for all the fields of structure below until the end or other <strong>set: {endian: &lt;value&gt;}</strong> will override previous settings. E.g.:</p>
-<pre class = "listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+<h1><a class="toc-backref" id="serialization-options" href="#serialization-options">Serialization options</a></h1><p>The serialization process can be controlled via the special syntax <strong>{&lt;key&gt;: &lt;value&gt;, &lt;key&gt;: &lt;value&gt;,...}</strong>. There are three ways of using this syntax:</p>
+<ul class="simple"><li>From invocation to the end of object or another invocation<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">MyType</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">set</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Operator">&lt;</span><span class="Identifier">options</span><span class="Operator">&gt;</span><span class="Punctuation">}</span>
+    <span class="Operator">...</span> <span class="Comment"># all fields until the end of object will be affected</span>
+    <span class="Operator">...</span> <span class="Comment"># another set: {&lt;options&gt;} can override previous one</span></pre></li>
+</ul>
+<ul class="simple"><li>For converted structure<pre class="listing"><span class="Identifier">toSerializable</span><span class="Punctuation">(</span><span class="Identifier">TheType</span><span class="Punctuation">,</span> <span class="Operator">&lt;</span><span class="Identifier">options</span><span class="Operator">&gt;</span><span class="Punctuation">)</span>
+<span class="Comment"># NOTE: curly braces are not required here</span></pre></li>
+</ul>
+<ul class="simple"><li>For particular field (inline)<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">MyType</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">typical_field</span><span class="Punctuation">:</span> <span class="Identifier">string</span>
+    <span class="Identifier">field_with_special_rules</span><span class="Punctuation">:</span> <span class="Identifier">int32</span> <span class="Keyword">as</span> <span class="Punctuation">{</span><span class="Operator">&lt;</span><span class="Identifier">options</span><span class="Operator">&gt;</span><span class="Punctuation">}</span> <span class="Comment"># inline options</span>
+    <span class="Comment"># NOTE: inline options have highest priority</span>
+    <span class="Identifier">another_typical_field</span><span class="Punctuation">:</span> <span class="Identifier">float32</span></pre></li>
+</ul>
+<p>The serialization options themself are described in the paragraphs they are related.</p>
+
+<h1><a class="toc-backref" id="endianness-switching" href="#endianness-switching">Endianness switching</a></h1><p>There is a way exists to set which endian should be used while [de]serialization particular structure or part of the structure. A special keyword <strong>endian</strong> in serialization options allows to set the endian. E.g.:</p>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
   <span class="Keyword">type</span> <span class="Identifier">Ball</span> <span class="Operator">=</span> <span class="Keyword">object</span>
     <span class="Identifier">weight</span><span class="Punctuation">:</span> <span class="Identifier">float32</span>        <span class="Comment"># This value will be serialized in *cpuEndian* endian</span>
     <span class="Identifier">set</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Identifier">endian</span><span class="Punctuation">:</span> <span class="Identifier">bigEndian</span><span class="Punctuation">}</span>
@@ -1409,17 +1458,54 @@ function main() {
     <span class="Identifier">set</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Identifier">endian</span><span class="Punctuation">:</span> <span class="Identifier">littleEndian</span><span class="Punctuation">}</span>     <span class="Comment"># Only &quot;bigEndian&quot; and &quot;littleEndian&quot; values allowed</span>
     <span class="Identifier">color</span><span class="Punctuation">:</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="DecNumber">3</span><span class="Punctuation">,</span> <span class="Identifier">int16</span><span class="Punctuation">]</span> <span class="Comment"># Values in this array will be serialized in little endian</span></pre><p>The generated code will use the <strong>swapEndian{16|32|64}()</strong> calls from the endians module to change endianness.</p>
 
-<h1><a class="toc-backref" id="usage-of-int-float-uint-types-without-size-specifier" href="#usage-of-int-float-uint-types-without-size-specifier">Usage of int, float, uint types without size specifier</a></h1><p>By default the serializable macro throws an error when the type under the macro contains basic type description without size specification. For example, the following code will cause an error:</p>
-<pre class = "listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
-  <span class="Keyword">type</span> <span class="Identifier">MyInt</span> <span class="Operator">=</span> <span class="Keyword">distinct</span> <span class="Identifier">int</span></pre><p>To avoid this behaviour one can tell the macro to allow all basic type description without size specification by using <strong>-d:allow_undefined_type_size</strong> compiler switch. You must avoid to use this switch as far as possible because when the switch enabled the library can not guarantee proper deserialization of objects on devices with different architectures.</p>
-
 <h1><a class="toc-backref" id="converting-existent-types-to-serializable" href="#converting-existent-types-to-serializable">Converting existent types to serializable</a></h1><p>In case when the type to be serialized cannot be rewriten under the <em>serializable</em> macro, there is <strong>toSerializable</strong> macro exist. The type description given to this macro produces exactly the same effect as the type declaration placed under the <em>serializable</em> macro. Do not forget to make fields of the type visible for serialization procedures generated by using asteriks notation or by including (not importing) module with type declaration. E.g.:</p>
-<pre class = "listing"><span class="Keyword">from</span> <span class="Identifier">basic2d</span> <span class="Keyword">import</span> <span class="Identifier">Point2d</span>
+<pre class="listing"><span class="Keyword">from</span> <span class="Identifier">basic2d</span> <span class="Keyword">import</span> <span class="Identifier">Point2d</span>
 <span class="Comment"># Point2d already have all the fields visible, so including not required</span>
 <span class="Identifier">toSerializable</span><span class="Punctuation">(</span><span class="Identifier">Point2d</span><span class="Punctuation">)</span> <span class="Comment"># Generation of serialization procedures</span>
 <span class="Operator">...</span>
 <span class="Keyword">include</span> <span class="Identifier">oids</span> <span class="Comment"># Oid's fields are visible only inside the module, so including is necessary</span>
-<span class="Identifier">toSerializable</span><span class="Punctuation">(</span><span class="Identifier">Oid</span><span class="Punctuation">)</span></pre>
+<span class="Identifier">toSerializable</span><span class="Punctuation">(</span><span class="Identifier">Oid</span><span class="Punctuation">)</span>
+<span class="Operator">...</span>
+<span class="Identifier">toSerializable</span><span class="Punctuation">(</span><span class="Identifier">Point2d</span><span class="Punctuation">,</span> <span class="Identifier">dynamic</span><span class="Punctuation">:</span> <span class="Identifier">false</span><span class="Punctuation">)</span> <span class="Comment"># The &quot;dynamic: false&quot; option</span>
+                                        <span class="Comment"># is equal to &quot;static:&quot; for</span>
+                                        <span class="Comment"># serializable macro</span></pre>
+<h1><a class="toc-backref" id="customizing-seq-and-string-serialization-schemas" href="#customizing-seq-and-string-serialization-schemas">Customizing seq and string serialization schemas</a></h1><p>By default, NESM serializes seq's and string's in a following way:</p>
+<ol class="simple"><li>Serialize the seq or string length as uint32</li>
+<li>Serialize the seq or string content as an array[length, type]</li>
+</ol>
+<p>In other words seq and string types can be described in following pseudo-code:</p>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">T</span><span class="Punctuation">]</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">length</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span>
+    <span class="Identifier">data</span><span class="Punctuation">:</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="Identifier">length</span><span class="Punctuation">,</span> <span class="Identifier">T</span><span class="Punctuation">]</span>
+  <span class="Keyword">type</span> <span class="Identifier">string</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">length</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span>
+    <span class="Identifier">data</span><span class="Punctuation">:</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="Identifier">length</span><span class="Punctuation">,</span> <span class="Identifier">char</span><span class="Punctuation">]</span></pre><p>In some cases this scheme is being not flexible enough, say there is a structure:</p>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">Matrix</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">lines</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span>
+    <span class="Identifier">columns</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span>
+    <span class="Identifier">data</span><span class="Punctuation">:</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="Identifier">lines</span><span class="Punctuation">,</span> <span class="Identifier">array</span><span class="Punctuation">[</span><span class="Identifier">columns</span><span class="Punctuation">,</span> <span class="Identifier">int32</span><span class="Punctuation">]</span><span class="Punctuation">]</span></pre><p>This type is impossible in Nim due to static nature of array type. But how else the seq size may be controlled outside the common scheme? For this case the <strong>size</strong> keyword exists in serializable options:</p>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">Matrix</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">lines</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span> <span class="Comment"># the size specifier should be placed before it's usage in the 'size' option</span>
+    <span class="Identifier">columns</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span>
+    <span class="Identifier">data</span><span class="Punctuation">:</span> <span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">int32</span><span class="Punctuation">]</span><span class="Punctuation">]</span> <span class="Keyword">as</span> <span class="Punctuation">{</span><span class="Identifier">size</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Punctuation">}</span><span class="Operator">.</span><span class="Identifier">lines</span><span class="Punctuation">,</span> <span class="Identifier">size</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Punctuation">}</span><span class="Operator">.</span><span class="Identifier">columns</span><span class="Punctuation">}</span>
+    <span class="Comment"># The seq's will be stored like array's but their sizes will be</span>
+    <span class="Comment"># taken from 'lines' and 'columns' fields during deserialization</span></pre><p>Note that first 'size' option controls only outer seq, but the second one is related to inner seq. Honestly, any valid expression can be used as argument for the 'size' option. Empty curly braces mean an object itself at the level of invocation. Special case is a double, triple, etc empty curly braces. Take a look at the example:</p>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">SpecialType</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">length</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span> <span class="Comment"># &lt;- this field will be used as length of subtype.a</span>
+    <span class="Identifier">subtype</span><span class="Punctuation">:</span> <span class="Keyword">tuple</span><span class="Punctuation">[</span><span class="Identifier">length</span><span class="Punctuation">:</span> <span class="Identifier">string</span><span class="Punctuation">,</span> <span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">int32</span><span class="Punctuation">]</span> <span class="Keyword">as</span> <span class="Punctuation">{</span><span class="Identifier">size</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Punctuation">{</span><span class="Punctuation">}</span><span class="Punctuation">}</span><span class="Operator">.</span><span class="Identifier">length</span><span class="Punctuation">}</span><span class="Punctuation">]</span></pre><p>The 'size' options invocation located inside the subtype field, and the only way to use field 'length' from the outer type without affecting inner string 'subtype.length' is the double curly braces notation.</p>
+<p>In oposite to <cite>size</cite> option there is <cite>sizeof</cite> option with can be used to set particular fields value to length of other periodic value instead of actual one during serialization. The previous example can be rewriten in following way to utilize the <cite>sizeof</cite> option:</p>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">SpecialType</span> <span class="Operator">=</span> <span class="Keyword">object</span>
+    <span class="Identifier">length</span><span class="Punctuation">:</span> <span class="Identifier">uint32</span> <span class="Keyword">as</span> <span class="Punctuation">{</span><span class="Identifier">sizeof</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Punctuation">}</span><span class="Operator">.</span><span class="Identifier">subtype</span><span class="Operator">.</span><span class="Identifier">a</span><span class="Punctuation">}</span>
+    <span class="Identifier">subtype</span><span class="Punctuation">:</span> <span class="Keyword">tuple</span><span class="Punctuation">[</span><span class="Identifier">length</span><span class="Punctuation">:</span> <span class="Identifier">string</span><span class="Punctuation">,</span> <span class="Identifier">a</span><span class="Punctuation">:</span> <span class="Identifier">seq</span><span class="Punctuation">[</span><span class="Identifier">int32</span><span class="Punctuation">]</span> <span class="Keyword">as</span> <span class="Punctuation">{</span><span class="Identifier">size</span><span class="Punctuation">:</span> <span class="Punctuation">{</span><span class="Punctuation">{</span><span class="Punctuation">}</span><span class="Punctuation">}</span><span class="Operator">.</span><span class="Identifier">length</span><span class="Punctuation">}</span><span class="Punctuation">]</span></pre>
+<h1><a class="toc-backref" id="usage-of-int-float-uint-types-without-size-specifier" href="#usage-of-int-float-uint-types-without-size-specifier">Usage of int, float, uint types without size specifier</a></h1><p>By default the serializable macro throws an error when the type under the macro contains basic type description without size specification. For example, the following code will cause an error:</p>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+  <span class="Keyword">type</span> <span class="Identifier">MyInt</span> <span class="Operator">=</span> <span class="Keyword">distinct</span> <span class="Identifier">int</span></pre><p>To avoid this behaviour one can tell the macro to allow all basic type description without size specification by using <strong>-d:allow_undefined_type_size</strong> compiler switch. You must avoid to use this switch as far as possible because when the switch enabled the library can not guarantee proper deserialization of objects on devices with different architectures.</p>
+
 <h1><a class="toc-backref" id="enum-correctness-checking" href="#enum-correctness-checking">Enum correctness checking</a></h1><p><strong>NESM</strong> is checking enum correctness after deserialization by default. If deserialized value is not one of enum ordinals then the <strong>ValueError</strong> will be raised. To disable such a behaviour user may use the <strong>-d:disableEnumChecks</strong> compiler switch.</p>
 
 <h1><a class="toc-backref" id="future-ideas" href="#future-ideas">Future ideas</a></h1><p>The following will not necessarily be done but may be realized on demand</p>
@@ -1440,9 +1526,9 @@ function main() {
 <dd>
 This type will be used as example to show which procedures will be generated by the <strong>serializable</strong> macro.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L253"
+href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L357"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L253" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L357" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 
@@ -1450,94 +1536,112 @@ class="link-seesrc" target="_blank">Source</a>
 <div class="section" id="12">
 <h1><a class="toc-backref" href="#12">Procs</a></h1>
 <dl class="item">
-<dt id="size"><a name="size,typedesc[TheType]"></a><pre><span class="Keyword">proc</span> <span class="Identifier">size</span><span class="Other">[</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">thetype</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span></pre></dt>
+<dt id="size"><a name="size,typedesc[TheType]"></a><pre><span class="Keyword">proc</span> <span class="Identifier">size</span><span class="Other">(</span><span class="Identifier">thetype</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span></pre></dt>
 <dd>
 Returns the size of serialized type. The type should be placed under the <strong>static</strong> section inside the <strong>serializable</strong> macro to access this procedure. The procedure could be used at compile time.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L256"
+href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L360"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L256" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L360" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="size"><a name="size,TheType"></a><pre><span class="Keyword">proc</span> <span class="Identifier">size</span><span class="Other">(</span><span class="Identifier">thetype</span><span class="Other">:</span> <span class="Identifier">TheType</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other pragmabegin">{.</span><div class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Returns the size of serialized type. Available for types which declarations is not placed under the <strong>static</strong> section.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L264"
+href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L368"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L264" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L368" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="serialize"><a name="serialize,TheType,Stream"></a><pre><span class="Keyword">proc</span> <span class="Identifier">serialize</span><span class="Other">(</span><span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">TheType</span><span class="Other">;</span> <span class="Identifier">stream</span><span class="Other">:</span> <span class="Identifier">Stream</span><span class="Other">)</span> <span class="Other pragmabegin">{.</span><div class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Serializes <cite>TheType</cite> and writes result to the given <cite>stream</cite>.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L270"
+href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L374"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L270" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L374" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="serialize"><a name="serialize,TheType"></a><pre><span class="Keyword">proc</span> <span class="Identifier">serialize</span><span class="Other">(</span><span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">TheType</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span class="Other pragmabegin">{.</span><div class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Serializes <cite>TheType</cite> to string. Underlying implementation uses StringStream and <cite>serialize()</cite> procedure above. More detailed description can be found in the top level documentation.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L275"
+href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L379"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L275" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L379" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
-<dt id="deserialize"><a name="deserialize,typedesc[TheType],Stream"></a><pre><span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Other">[</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">thetype</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">stream</span><span class="Other">:</span> <span class="Identifier">Stream</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">TheType</span> <span class="Other pragmabegin">{.</span><div class="pragma">
+<dt id="deserialize"><a name="deserialize,typedesc[TheType],Stream"></a><pre><span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Other">(</span><span class="Identifier">thetype</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">stream</span><span class="Other">:</span> <span class="Identifier">Stream</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">TheType</span> <span class="Other pragmabegin">{.</span><div class="pragma">
     <span class="Identifier">raises</span><span class="Other">:</span> <span class="Identifier">AssertionError</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Interprets the data received from the <cite>stream</cite> as <cite>TheType</cite> and deserializes it then. When the stream will not provide enough bytes an <cite>AssertionError</cite> will be raised.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L283"
+href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L387"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L283" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L387" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
-<dt id="deserialize"><a name="deserialize,typedesc[TheType],"></a><pre><span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Other">[</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">thetype</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">;</span>
-                  <span class="Identifier">data</span><span class="Other">:</span> <span class="Identifier">string</span> <span class="Operator">|</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">byte</span> <span class="Operator">|</span> <span class="Identifier">char</span> <span class="Operator">|</span> <span class="Identifier">int8</span> <span class="Operator">|</span> <span class="Identifier">uint8</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">TheType</span> <span class="Other pragmabegin">{.</span><div class="pragma">
+<dt id="deserialize"><a name="deserialize,typedesc[TheType],"></a><pre><span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Other">(</span><span class="Identifier">thetype</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">TheType</span><span class="Other">]</span><span class="Other">;</span>
+                <span class="Identifier">data</span><span class="Other">:</span> <span class="Identifier">string</span> <span class="Operator">|</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">byte</span> <span class="Operator">|</span> <span class="Identifier">char</span> <span class="Operator">|</span> <span class="Identifier">int8</span> <span class="Operator">|</span> <span class="Identifier">uint8</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">TheType</span> <span class="Other pragmabegin">{.</span><div class="pragma">
     <span class="Identifier">raises</span><span class="Other">:</span> <span class="Identifier">AssertionError</span></div><span class="Other pragmaend">.}</span></pre></dt>
 <dd>
 Interprets given data as serialized <cite>TheType</cite> and deserializes it then. Only available for types which declarations are placed under the <strong>static</strong> section. When the <cite>data</cite> size is lesser than <cite>TheType.size</cite>, the AssertionError will be raised.
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L291"
+href="https://github.com/xomachine/NESM/tree/master/nesm/documentation.nim#L395"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L291" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm/documentation.nim#L395" class="link-seesrc" target="_blank" >Edit</a>
+
+</dd>
+<dt id="serialize"><a name="serialize,T,Stream"></a><pre><span class="Keyword">proc</span> <span class="Identifier">serialize</span><span class="Other">[</span><span class="Identifier">T</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">;</span> <span class="Identifier">thestream</span><span class="Other">:</span> <span class="Identifier">Stream</span><span class="Other">)</span></pre></dt>
+<dd>
+The non-intrusive serialize proc which allows to perform object serialization without special declaration. The negative side-effect of such approach is inability to pass any options (like <cite>endian</cite> or <cite>dynamic</cite>) to the serializer and lack of nested objects support. This proc should be imported directly.
+&nbsp;&nbsp;<a
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L91"
+class="link-seesrc" target="_blank">Source</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L91" class="link-seesrc" target="_blank" >Edit</a>
+
+</dd>
+<dt id="deserialize"><a name="deserialize,Stream"></a><pre><span class="Keyword">proc</span> <span class="Identifier">deserialize</span><span class="Other">[</span><span class="Identifier">T</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">thestream</span><span class="Other">:</span> <span class="Identifier">Stream</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">T</span></pre></dt>
+<dd>
+The non-intrusive deserialize proc which allows to perform object deserialization without special declaration. The negative side-effect of such approach is inability to pass any options (like <cite>endian</cite> or <cite>dynamic</cite>) to the serializer and lack of nested objects support. This proc should be imported directly.
+&nbsp;&nbsp;<a
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L99"
+class="link-seesrc" target="_blank">Source</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L99" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 
 </dl></div>
-<div class="section" id="16">
-<h1><a class="toc-backref" href="#16">Macros</a></h1>
+<div class="section" id="17">
+<h1><a class="toc-backref" href="#17">Macros</a></h1>
 <dl class="item">
 <dt id="toSerializable"><a name="toSerializable.m,typed,varargs[untyped]"></a><pre><span class="Keyword">macro</span> <span class="Identifier">toSerializable</span><span class="Other">(</span><span class="Identifier">typedecl</span><span class="Other">:</span> <span class="Identifier">typed</span><span class="Other">;</span> <span class="Identifier">settings</span><span class="Other">:</span> <span class="Identifier">varargs</span><span class="Other">[</span><span class="Identifier">untyped</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
 <dd>
 <p>Generate [de]serialize procedures for existing type with given settings.</p>
 <p>Settings should be supplied in the <strong>key: value, key:value</strong> format.</p>
 <p>For example:</p>
-<pre class = "listing"><span class="Identifier">toSerializable</span><span class="Punctuation">(</span><span class="Identifier">TheType</span><span class="Punctuation">,</span> <span class="Identifier">endian</span><span class="Punctuation">:</span> <span class="Identifier">bigEndian</span><span class="Punctuation">,</span> <span class="Identifier">dynamic</span><span class="Punctuation">:</span> <span class="Identifier">false</span><span class="Punctuation">)</span></pre><p>Avalible options:</p>
+<pre class="listing"><span class="Identifier">toSerializable</span><span class="Punctuation">(</span><span class="Identifier">TheType</span><span class="Punctuation">,</span> <span class="Identifier">endian</span><span class="Punctuation">:</span> <span class="Identifier">bigEndian</span><span class="Punctuation">,</span> <span class="Identifier">dynamic</span><span class="Punctuation">:</span> <span class="Identifier">false</span><span class="Punctuation">)</span></pre><p>Avalible options:</p>
 <ul class="simple"><li><strong>endian</strong> - set the endian of serialized object</li>
 <li><strong>dynamic</strong> - if set to 'false' then object treated as <strong>static</strong></li>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L171"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L107"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L171" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L107" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <dt id="serializable"><a name="serializable.m,untyped"></a><pre><span class="Keyword">macro</span> <span class="Identifier">serializable</span><span class="Other">(</span><span class="Identifier">typedecl</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
 <dd>
 <p>The main macro that generates code.</p>
 <p>Usage:</p>
-<pre class = "listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
+<pre class="listing"><span class="Identifier">serializable</span><span class="Punctuation">:</span>
   <span class="Comment"># Type declaration</span></pre>
 &nbsp;&nbsp;<a
-href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L212"
+href="https://github.com/xomachine/NESM/tree/master/nesm.nim#L132"
 class="link-seesrc" target="_blank">Source</a>
-<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L212" class="link-seesrc" target="_blank" >Edit</a>
+<a href="https://github.com/xomachine/NESM/edit/devel/nesm.nim#L132" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 
@@ -1550,7 +1654,7 @@ class="link-seesrc" target="_blank">Source</a>
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small>Made with Nim. Generated: 2017-05-09 00:36:56 UTC</small>
+        <small>Made with Nim. Generated: 2018-02-23 20:41:41 UTC</small>
       </div>
     </div>
   </div>
