@@ -1,147 +1,39 @@
 when defined(js):
   error("Non C-like targets non supported yet.")
-
+{.deadCodeElim: on.}
 import macros
 from strutils import `%`
 from sequtils import toSeq
-from tables import Table, initTable, contains, `[]`, `[]=`
-from streams import Stream, newStringStream
+from tables import contains, `[]`, `[]=`
+from streams import Stream
 
 when not defined(nimdoc):
-  from nesm.typesinfo import TypeChunk, Context
-  from nesm.generator import genTypeChunk, STREAM_NAME
+  from nesm.typesinfo import TypeChunk, Context, initContext
+  from nesm.generator import genTypeChunk
+  from nesm.procgen import generateProcs
+  from nesm.settings import applyOptions, splitSettingsExpr
 else:
   import endians
-  type TypeChunk = object
   include nesm.documentation
 
-const SERIALIZER_INPUT_NAME = "obj"
-const DESERIALIZER_DATA_NAME = "data"
-const SERIALIZE_DECLARATION = """proc serialize$1(""" &
-  SERIALIZER_INPUT_NAME & """: $2): string = discard"""
-const DESERIALIZE_DECLARATION = """proc deserialize$1""" &
-  """(thetype: typedesc[$2], """ & DESERIALIZER_DATA_NAME &
-  """: seq[byte | char | int8 | uint8] | string):""" &
-  """$2 = discard"""
 
-when not defined(nimdoc):
-  proc makeSerializeStreamDeclaration(typename: string,
-      is_exported: bool,
-      body: NimNode): NimNode {.compileTime.} =
-    let itn = !typename
-    let fname =
-      if is_exported: newIdentNode("serialize").postfix("*")
-      else: newIdentNode("serialize")
-    let isin = !SERIALIZER_INPUT_NAME
-    quote do:
-      proc `fname`(`isin`: `itn`,
-                   `STREAM_NAME`: Stream) = `body`
-
-  proc makeDeserializeStreamDeclaration(typename: string,
-      is_exported: bool,
-      body: NimNode): NimNode {.compileTime.} =
-    let itn = !typename
-    let fname =
-      if is_exported:
-        newIdentNode("deserialize").postfix("*")
-      else: newIdentNode("deserialize")
-    quote do:
-      proc `fname`(thetype: typedesc[`itn`],
-                   `STREAM_NAME`: Stream): `itn` = `body`
-
-proc makeSerializeStreamConversion(): NimNode {.compileTime.} =
-  let isin = !SERIALIZER_INPUT_NAME
-  quote do:
-    let ss = newStringStream()
-    serialize(`isin`, ss)
-    ss.data
-
-proc makeDeserializeStreamConversion(name: string): NimNode {.compileTime.} =
-  let iname = !name
-  let ddn = !DESERIALIZER_DATA_NAME
-  quote do:
-    assert(`ddn`.len >= type(`iname`).size(),
-           "Given sequence should contain at least " &
-           $(type(`iname`).size()) & " bytes!")
-    let ss = newStringStream(cast[string](`ddn`))
-    deserialize(type(`iname`), ss)
-
-const STATIC_SIZE_DECLARATION =
-  """proc size$1(thetype: typedesc[$2]): int = discard"""
-const SIZE_DECLARATION = "proc size$1(" &
-                         SERIALIZER_INPUT_NAME &
-                         ": $2): int = discard"
-
-
-when not defined(nimdoc):
-  static:
-    var ctx: Context
-    ctx.declared = initTable[string, TypeChunk]()
-  proc generateProc(pattern: string, name: string,
-                    sign: string,
-                    body: NimNode = newEmptyNode()): NimNode =
-    result = parseExpr(pattern % [sign, name])
-    if body.kind != nnkEmpty:
-      result.body = body
-
-  proc generateProcs(context: var Context,
-                     obj: NimNode): NimNode {.compileTime.} =
-    expectKind(obj, nnkTypeDef)
-    expectMinLen(obj, 3)
-    expectKind(obj[1], nnkEmpty)
-    let typename = if obj[0].kind == nnkPragmaExpr: obj[0][0] else: obj[0]
-    let is_shared = typename.kind == nnkPostfix
-    let name = if is_shared: $typename.basename else: $typename
-    let sign =
-      if is_shared: "*"
-      else: ""
-    let body = obj[2]
-    let info = context.genTypeChunk(body)
-    let size_node =
-      info.size(newIdentNode(SERIALIZER_INPUT_NAME))
-    context.declared[name] = info
-    let writer_conversion = makeSerializeStreamConversion()
-    let serializer = generateProc(SERIALIZE_DECLARATION,
-                                  name, sign,
-                                  writer_conversion)
-    let serialize_stream =
-      makeSerializeStreamDeclaration(name, is_shared,
-        info.serialize(newIdentNode(SERIALIZER_INPUT_NAME)))
-    let obtainer_conversion =
-      if context.is_static:
-        makeDeserializeStreamConversion("result")
-      else: newEmptyNode()
-    let deserializer =
-      if context.is_static:
-        generateProc(DESERIALIZE_DECLARATION, name, sign,
-                     obtainer_conversion)
-      else: newEmptyNode()
-    let deserialize_stream =
-      makeDeserializeStreamDeclaration(name, is_shared,
-      info.deserialize(newIdentNode("result")))
-    let size_declaration =
-      if context.is_static: STATIC_SIZE_DECLARATION
-      else: SIZE_DECLARATION
-    let sizeProc = generateProc(size_declaration, name, sign,
-                                size_node)
-    newStmtList(sizeProc, serialize_stream, serializer,
-                deserialize_stream, deserializer)
-
-  proc prepare(context: var Context, statements: NimNode
-               ): NimNode {.compileTime.} =
-    result = newStmtList()
-    case statements.kind
-    of nnkStmtList, nnkTypeSection, nnkStaticStmt:
-      let oldstatic = context.is_static
-      context.is_static = context.is_static or
-        (statements.kind == nnkStaticStmt)
-      for child in statements.children():
-        result.add(context.prepare(child))
-      context.is_static = oldstatic
-    of nnkTypeDef:
-      result.add(context.generateProcs(statements))
-    else:
-      error("Only type declarations can be serializable")
+static:
+  var ctx = initContext()
+proc prepare(context: var Context, statements: NimNode
+             ): NimNode {.compileTime.} =
+  result = newStmtList()
+  case statements.kind
+  of nnkStmtList, nnkTypeSection, nnkStaticStmt:
+    let oldstatic = context.is_static
+    context.is_static = context.is_static or
+      (statements.kind == nnkStaticStmt)
+    for child in statements.children():
+      result.add(context.prepare(child))
+    context.is_static = oldstatic
+  of nnkTypeDef:
+    result.add(context.generateProcs(statements))
+  else:
+    error("Only type declarations can be serializable")
 
 proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
   var children = newSeq[NimNode]()
@@ -154,19 +46,63 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
       for cc in c.children():
         children.add(cleanupTypeDeclaration(cc))
     of nnkIdentDefs:
-      if c[^2].repr == "cstring":
+      let last = if c[^1].kind == nnkEmpty: c.len - 2 else: c.len - 1
+      let (originalType, options) = c[last].splitSettingsExpr()
+      if options.len > 0:
+        # newID need to be a NimNode that contains IdentDefs node
+        # to utilze recursive call of cleanupTypeDeclaration
+        var newID = newTree(nnkStmtList, c)
+        #copyChildrenTo(c, newID[0])
+        # first element of CurlyExpr is an actual type
+        newID[0][last] = originalType
+        children.add(newID.cleanupTypeDeclaration()[0])
+      elif c[last].repr == "cstring":
         var newID = newNimNode(nnkIdentDefs)
         copyChildrenTo(c, newID)
-        newID[^2] = newIdentNode("string")
+        newID[last] = newIdentNode("string")
         children.add(newID)
       elif c.len == 3 and c[0] == settingsKeyword and
            c[1].kind == nnkTableConstr:
         continue
+      elif c[last].kind == nnkTupleTy:
+        var newID = c
+        newID[last] = cleanupTypeDeclaration(c[last])
+        children.add(newID)
       else:
         children.add(c)
     else:
       children.add(cleanupTypeDeclaration(c))
   newTree(declaration.kind, children)
+
+macro nonIntrusiveBody(typename: typed, o: untyped, de: static[bool]): untyped =
+  let typebody = getTypeImpl(typename)
+  when defined(debug):
+    hint("Deserialize? " & $de)
+    hint(typebody.treeRepr)
+    hint(typebody.repr)
+  let chunk = ctx.genTypeChunk(typebody)
+  result = if de: chunk.deserialize(o) else: chunk.serialize(o)
+  when defined(debug):
+    hint(result.repr)
+
+template nonIntrusiveTemplate[S](o: S, de: static[bool]) =
+  nonIntrusiveBody(S, o, de)
+
+proc serialize*[T](obj: T, thestream: Stream) =
+  ## The non-intrusive serialize proc which allows to perform object
+  ## serialization without special declaration.
+  ## The negative side-effect of such approach is inability to pass any options
+  ## (like `endian` or `dynamic`) to the serializer and lack of nested objects
+  ## support. This proc should be imported directly.
+  nonIntrusiveTemplate(obj, false)
+
+proc deserialize*[T](thestream: Stream): T =
+  ## The non-intrusive deserialize proc which allows to perform object
+  ## deserialization without special declaration.
+  ## The negative side-effect of such approach is inability to pass any options
+  ## (like `endian` or `dynamic`) to the serializer and lack of nested objects
+  ## support. This proc should be imported directly.
+  nonIntrusiveTemplate(result, true)
 
 macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   ## Generate [de]serialize procedures for existing type with given settings.
@@ -185,30 +121,13 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   when defined(debug):
     hint(typedecl.symbol.getImpl().treeRepr())
   var ast = typedecl.symbol.getImpl()
-  for arg in settings:
-    arg.expectKind(nnkExprColonExpr)
-    arg.expectMinLen(2)
-    let key = $arg[0]
-    let value = $arg[1]
-    case key
-    of "dynamic":
-      if value == "false":
-        ctx.is_static = true
-      elif value == "true":
-        ctx.is_static = false
-      else:
-        error("'dynamic' property can be only 'true' or 'false', but not: " &
-              value)
-    of "endian":
-      if value != $cpuEndian:
-        ctx.swapEndian = true
-    else:
-      error("Unknown property: " & key)
+  var newctx = ctx.applyOptions(settings)
   when defined(debug):
     hint(ast.treeRepr)
-  result.add(ctx.prepare(ast))
-  ctx.is_static = false
-  ctx.swapEndian = false
+  result.add(newctx.prepare(ast))
+  ctx.declared = newctx.declared
+  when defined(debug):
+    hint(result.repr)
 
 macro serializable*(typedecl: untyped): untyped =
   ## The main macro that generates code.

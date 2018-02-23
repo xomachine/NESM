@@ -1,13 +1,13 @@
-from nesm.typesinfo import Context, TypeChunk
-from endians import swapEndian16, swapEndian32, swapEndian64
-from streams import writeData, readData
+from typesinfo import Context, TypeChunk
 import macros
 
 proc genBasic*(context: Context, size: int): TypeChunk {.compileTime.}
 proc genSerialize*(name: NimNode, size: NimNode): NimNode {.compileTime.}
 proc genDeserialize*(name: NimNode, size: NimNode): NimNode {.compileTime.}
 
-from nesm.generator import STREAM_NAME
+from generator import STREAM_NAME
+from endians import swapEndian16, swapEndian32, swapEndian64
+from streams import writeData, readData
 
 proc genDeserialize*(name: NimNode, size: NimNode): NimNode =
   quote do:

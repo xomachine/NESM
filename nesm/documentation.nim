@@ -174,13 +174,46 @@
 ##     let ss142004 = newStringStream(cast[string](data))
 ##     deserialize(type(result), ss142004)
 ##
+## Serialization options
+## ---------------------
+## The serialization process can be controlled via the special syntax
+## **{<key>: <value>, <key>: <value>,...}**. There are three ways of
+## using this syntax:
+##
+## * From invocation to the end of object or another invocation
+##
+##   .. code-block:: nim
+##     serializable:
+##       type MyType = object
+##         set: {<options>}
+##         ... # all fields until the end of object will be affected
+##         ... # another set: {<options>} can override previous one
+##
+## * For converted structure
+##
+##   .. code-block:: nim
+##     toSerializable(TheType, <options>)
+##     # NOTE: curly braces are not required here
+##
+## * For particular field (inline)
+##
+##   .. code-block:: nim
+##     serializable:
+##       type MyType = object
+##         typical_field: string
+##         field_with_special_rules: int32 as {<options>} # inline options
+##         # NOTE: inline options have highest priority
+##         another_typical_field: float32
+##
+## The serialization options themself are described in the paragraphs they are
+## related.
+##
 ## Endianness switching
 ## -----------------
 ## There is a way exists to set which endian should be used
 ## while [de]serialization particular structure or part of
-## the structure. A special syntax **set: {endian: <value>}** allows to set
-## the endian for all the fields of structure below until the
-## end or other **set: {endian: <value>}** will override previous settings.
+## the structure. A special keyword **endian** in serialization options
+## allows to set the endian.
 ## E.g.:
 ##
 ## .. code-block:: nim
@@ -194,23 +227,6 @@
 ##
 ## The generated code will use the **swapEndian{16|32|64}()**
 ## calls from the endians module to change endianness.
-##
-## Usage of int, float, uint types without size specifier
-## ------------------------------------------------------
-## By default the serializable macro throws an error when the type
-## under the macro contains basic type description without size specification.
-## For example, the following code will cause an error:
-##
-## .. code-block:: nim
-##   serializable:
-##     type MyInt = distinct int
-##
-## To avoid this behaviour one can tell the macro to allow all basic type
-## description without size specification
-## by using **-d:allow_undefined_type_size** compiler switch.
-## You must avoid to use this switch as far as possible because when
-## the switch enabled the library can not guarantee proper deserialization
-## of objects on devices with different architectures.
 ##
 ## Converting existent types to serializable
 ## -----------------------------------------
@@ -230,6 +246,94 @@
 ##   ...
 ##   include oids # Oid's fields are visible only inside the module, so including is necessary
 ##   toSerializable(Oid)
+##   ...
+##   toSerializable(Point2d, dynamic: false) # The "dynamic: false" option
+##                                           # is equal to "static:" for
+##                                           # serializable macro
+##
+## Customizing seq and string serialization schemas
+## ------------------------------------------------
+## By default, NESM serializes seq's and string's in a following way:
+## 1. Serialize the seq or string length as uint32
+## 2. Serialize the seq or string content as an array[length, type]
+## In other words seq and string types can be described in following
+## pseudo-code:
+##
+## .. code-block:: nim
+##   serializable:
+##     type seq[T] = object
+##       length: uint32
+##       data: array[length, T]
+##     type string = object
+##       length: uint32
+##       data: array[length, char]
+##
+## In some cases this scheme is being not flexible enough, say there is
+## a structure:
+##
+## .. code-block:: nim
+##   serializable:
+##     type Matrix = object
+##       lines: uint32
+##       columns: uint32
+##       data: array[lines, array[columns, int32]]
+##
+## This type is impossible in Nim due to static nature of array type.
+## But how else the seq size may be controlled outside the common scheme?
+## For this case the **size** keyword exists in serializable options:
+##
+## .. code-block:: nim
+##   serializable:
+##     type Matrix = object
+##       lines: uint32 # the size specifier should be placed before it's usage in the 'size' option
+##       columns: uint32
+##       data: seq[seq[int32]] as {size: {}.lines, size: {}.columns}
+##       # The seq's will be stored like array's but their sizes will be
+##       # taken from 'lines' and 'columns' fields during deserialization
+##
+## Note that first 'size' option controls only outer seq, but the second
+## one is related to inner seq. Honestly, any valid expression can be used as
+## argument for the 'size' option. Empty curly braces mean an object itself
+## at the level of invocation. Special case is a double, triple, etc empty
+## curly braces. Take a look at the example:
+##
+## .. code-block:: nim
+##   serializable:
+##     type SpecialType = object
+##       length: uint32 # <- this field will be used as length of subtype.a
+##       subtype: tuple[length: string, a: seq[int32] as {size: {{}}.length}]
+##
+## The 'size' options invocation located inside the subtype field, and
+## the only way to use field 'length' from the outer type without affecting
+## inner string 'subtype.length' is the double curly braces notation.
+##
+## In oposite to `size` option there is `sizeof` option with can be used to
+## set particular fields value to length of other periodic value instead of
+## actual one during serialization. The previous example can be rewriten in
+## following way to utilize the `sizeof` option:
+##
+## .. code-block:: nim
+##   serializable:
+##     type SpecialType = object
+##       length: uint32 as {sizeof: {}.subtype.a}
+##       subtype: tuple[length: string, a: seq[int32] as {size: {{}}.length}]
+##
+## Usage of int, float, uint types without size specifier
+## ------------------------------------------------------
+## By default the serializable macro throws an error when the type
+## under the macro contains basic type description without size specification.
+## For example, the following code will cause an error:
+##
+## .. code-block:: nim
+##   serializable:
+##     type MyInt = distinct int
+##
+## To avoid this behaviour one can tell the macro to allow all basic type
+## description without size specification
+## by using **-d:allow_undefined_type_size** compiler switch.
+## You must avoid to use this switch as far as possible because when
+## the switch enabled the library can not guarantee proper deserialization
+## of objects on devices with different architectures.
 ##
 ## Enum correctness checking
 ## -------------------------

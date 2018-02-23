@@ -29,7 +29,7 @@ suite "Enumerates":
           A
         type Filler = uint8
     let rnw = get_reader_n_writer()
-    let a: Filler = random(1..250).uint8
+    let a: Filler = rand(1..250).uint8
     a.serialize(rnw)
     rnw.setPosition(0)
     expect(ValueError):
@@ -61,8 +61,8 @@ suite "Enumerates":
     let rnw = get_reader_n_writer()
     var da: TypeWithEnum
     da.a = NestedEnum.B
-    da.b = random(1000).int32
-    da.c = random(1000).int32
+    da.b = rand(1000).int32
+    da.c = rand(1000).int32
     da.serialize(rnw)
     rnw.setPosition(0)
     let a = TypeWithEnum.deserialize(rnw)
@@ -81,8 +81,8 @@ suite "Enumerates":
           of B:
             b: int16
     let rnw = get_reader_n_writer()
-    let o = CType(kind:CEnum.A, a:random(10000).int32)
-    let oo = CType(kind:CEnum.B, b:random(1000).int16)
+    let o = CType(kind:CEnum.A, a:rand(10000).int32)
+    let oo = CType(kind:CEnum.B, b:rand(1000).int16)
     o.serialize(rnw)
     oo.serialize(rnw)
     rnw.setPosition(0)

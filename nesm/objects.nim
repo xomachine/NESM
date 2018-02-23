@@ -1,8 +1,4 @@
-from sequtils import toSeq, filterIt, mapIt
-from strutils import cmpIgnoreStyle
-from nesm.generator import genTypeChunk, correct_sum, unfold
-from nesm.typesinfo import TypeChunk, Context
-import macros
+from typesinfo import TypeChunk, Context
 
 type
   Field = tuple
@@ -17,6 +13,12 @@ proc genCase(context: Context, decl: NimNode): TypeChunk {.compileTime.}
 proc caseWorkaround(tc: TypeChunk): TypeChunk {.compileTime.}
 proc evalSize(e: NimNode): BiggestInt {.compileTime.}
 proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
+
+from sequtils import toSeq, filterIt, mapIt
+from generator import genTypeChunk
+from utils import unfold, correct_sum, onlyname
+from settings import applyOptions, splitSettingsExpr
+import macros
 
 proc caseWorkaround(tc: TypeChunk): TypeChunk =
   # st - type of field under case
@@ -63,16 +65,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
          declaration[1].kind == nnkTableConstr:
         # The set: {key:value} syntax encountered
         let paramslist = declaration[1]
-        for param in paramslist.children():
-          param.expectKind(nnkExprColonExpr)
-          param.expectMinLen(2)
-          let key = param[0].repr
-          let val = param[1].repr
-          case key
-          of "endian":
-            newContext.swapEndian = cmpIgnoreStyle(val, $cpuEndian) != 0
-          else:
-            error("Unknown setting: " & key)
+        newContext = newContext.applyOptions(paramslist)
       else:
         let fchunk = newContext.genFields(declaration)
         elems &= fchunk.entries
@@ -86,7 +79,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
     result = newIntLitNode(0)
     var result_list = newSeq[NimNode]()
     for i in elems.items():
-      let n = !i.name
+      let n = newIdentNode(i.name)
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).unfold()
         else: source
@@ -105,7 +98,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
   result.serialize = proc(source: NimNode): NimNode =
     result = newStmtList(parseExpr("discard"))
     for i in elems.items():
-      let n = !i.name
+      let n = newIdentNode(i.name)
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).unfold()
         else: source
@@ -114,7 +107,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
   result.deserialize = proc(source: NimNode): NimNode =
     result = newStmtList(parseExpr("discard"))
     for i in elems.items():
-      let n = !i.name
+      let n = newIdentNode(i.name)
       let newsource =
         if ($n).len > 0: (quote do: `source`.`n`).unfold()
         else: source
@@ -130,19 +123,19 @@ proc genFields(context: Context, decl: NimNode): FieldChunk =
     if decl[^1].kind == nnkEmpty: decl.len - 2
     else: decl.len - 1
   let subtype = decl[last]
-  let chunk = context.genTypeChunk(subtype)
+  let (originalType, options) = subtype.splitSettingsExpr()
+  let chunk = context.applyOptions(options).genTypeChunk(originalType)
   for i in 0..<last:
     if decl[i].kind != nnkPostfix:
       result.has_hidden = true
-    let name = $decl[i].basename
+    let name = $decl[i].onlyname
     result.entries.add((name: name, chunk: chunk))
 
-
 proc genCase(context: Context, decl: NimNode): TypeChunk =
-  let checkable = decl[0][0].basename
+  let checkable = decl[0][0].onlyname
   let eachbranch = proc(b: NimNode): auto =
-    let conditions = toSeq(b.children)
-      .filterIt(it.kind != nnkRecList)
+    let children = toSeq(b.children)
+    let conditions = children[0..^2]
     let branch = context.genTypeChunk(b.last)
     let size = proc(source: NimNode):NimNode =
       let casebody = branch.size(source)

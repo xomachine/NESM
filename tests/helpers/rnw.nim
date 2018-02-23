@@ -1,9 +1,13 @@
 
 from sequtils import newSeqWith
-from random import random
+when NimMajor > 0 or NimMinor > 17 or (NimMinor == 17 and NimPatch > 2):
+  from random import rand
+else:
+  from random import random
+  proc rand[T](a: T): int = random(a)
 from streams import Stream, StringStream, newStringStream
 
-export random
+export rand
 
 type
   RandomStream = ref RandomStreamObj
@@ -12,7 +16,7 @@ type
     buffer*: seq[char]
 
 proc random_char(): char =
-  return chr(random(ord('A')..ord('Z')))
+  return chr(rand(ord('A')..ord('Z')))
 
 proc get_random_reader_n_writer*(): RandomStream =
   new(result)
@@ -42,7 +46,7 @@ proc get_reader_n_writer*(): StringStream =
   newStringStream()
 
 template random_seq_with*(elem: untyped): untyped =
-  let size = random(1..100)
+  let size = rand(1..100)
   newSeqWith(size, elem)
 
 proc get_random_string*(): string =

@@ -1,10 +1,18 @@
-from nesm.typesinfo import Context, TypeChunk, estimateBasicSize, isBasic
-from nesm.basics import genSerialize, genDeserialize
-from nesm.generator import genTypeChunk, STREAM_NAME, correct_sum, unfold
-from streams import writeData, write, readChar
+from typesinfo import Context, TypeChunk, estimateBasicSize, isBasic, BodyGenerator
 import macros
 
-proc genCStringDeserialize*(name: NimNode): NimNode {.compileTime.} =
+
+proc genCStringDeserialize*(name: NimNode): NimNode {.compileTime.}
+proc genCStringSerialize*(name: NimNode): NimNode {.compileTime.}
+proc genPeriodic*(context: Context, elem: NimNode,
+                  length: BodyGenerator): TypeChunk {.compileTime.}
+
+from basics import genSerialize, genDeserialize
+from generator import genTypeChunk, STREAM_NAME
+from utils import unfold, correct_sum
+from streams import writeData, write, readChar
+
+proc genCStringDeserialize(name: NimNode): NimNode =
   quote do:
     block:
       var str = "" & `STREAM_NAME`.readChar()
@@ -14,17 +22,22 @@ proc genCStringDeserialize*(name: NimNode): NimNode {.compileTime.} =
         index += 1
       `name` = str[0..<index]
 
-proc genCStringSerialize*(name: NimNode): NimNode {.compileTime.} =
+proc genCStringSerialize(name: NimNode): NimNode =
   quote do:
     `STREAM_NAME`.writeData(`name`[0].unsafeAddr,
                             `name`.len)
     `STREAM_NAME`.write('\x00')
 
+proc findInChilds(a, b: NimNode): bool =
+  if a == b: return true
+  else:
+    for ac in a.children():
+      if ac.findInChilds(b):
+        return true
+    return false
 
-
-proc genPeriodic*(context: Context, elem: NimNode,
-                  length: proc (s:NimNode): NimNode,
-                  ): TypeChunk =
+proc genPeriodic(context: Context, elem: NimNode,
+                 length: BodyGenerator): TypeChunk =
   let elemString = elem.repr
   let lencheck = length(newEmptyNode())
   let is_array = lencheck.kind != nnkCall
@@ -50,11 +63,12 @@ proc genPeriodic*(context: Context, elem: NimNode,
       quote do:
         if `lens` > 0: `serialization`
     result.deserialize = proc (s: NimNode): NimNode =
-      let size = (quote do: `lenvarname` * `eSize`).unfold()
-      let newsource = (quote do: `s`[0]).unfold()
+      let lens = length(s)
+      let size = (quote do: `lens` * `eSize`).unfold()
+      let newsource = (quote do: `s`[0])
       let deserialization = genDeserialize(newsource, size)
       quote do:
-        if `lenvarname` > 0: `deserialization`
+        if `lens` > 0: `deserialization`
     result.dynamic = not context.is_static
     result.has_hidden = false
   else:
@@ -65,7 +79,7 @@ proc genPeriodic*(context: Context, elem: NimNode,
       let periodic_len = length(s)
       let newsource = (quote do: `s`[`index_letter`]).unfold()
       let chunk_size = one_chunk.size(newsource)
-      if is_array and chunk_size.kind != nnkStmtList:
+      if not chunk_size.findInChilds(index_letter):
         periodic_len.infix("*", chunk_size)
       else:
         let chunk_expr = correct_sum(chunk_size)
@@ -80,10 +94,11 @@ proc genPeriodic*(context: Context, elem: NimNode,
         for `index_letter` in 0..<(`periodic_len`):
           `chunk_expr`
     result.deserialize = proc(s: NimNode): NimNode =
+      let lens = length(s)
       let newsource = (quote do: `s`[`index_letter`]).unfold()
       let chunk_expr = onechunk.deserialize(newsource)
       quote do:
-        for `index_letter` in 0..<(`lenvarname`):
+        for `index_letter` in 0..<(`lens`):
           `chunk_expr`
   if not is_array:
     let size_header_chunk = context.genTypeChunk(
@@ -92,7 +107,7 @@ proc genPeriodic*(context: Context, elem: NimNode,
     result.size = proc(s:NimNode):NimNode =
       let presize = preresult.size(s)
       let headersize = size_header_chunk.size(s)
-      let r = !"result"
+      let r = newIdentNode("result")
       if presize.kind notin [nnkInfix, nnkIntLit, nnkCall]:
         quote do:
           `presize`

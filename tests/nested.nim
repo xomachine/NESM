@@ -15,7 +15,7 @@ suite "Nested types":
     var o:MyNested
     o.b = 42.int32
     o.a = ImportedType(a: get_random_string(),
-                       b: random(100).int32)
+                       b: rand(100).int32)
     o.serialize(rnw)
     rnw.setPosition(0)
     let d = MyNested.deserialize(rnw)

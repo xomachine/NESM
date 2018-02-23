@@ -1,4 +1,6 @@
 from nesm import serializable
+from endians import bigEndian32, littleEndian32
+import helpers.rnw
 import unittest
 
 suite "Endianness support":
@@ -57,3 +59,21 @@ suite "Endianness support":
     check(o.set[1] == 20)
     let so = o.serialize()
     check(so == teststring)
+
+  test "Inline syntax":
+    serializable:
+      static:
+        type SomeInline = object
+          set: {endian: bigEndian}
+          od: int32
+          sd: int32 as {endian: littleEndian}
+          od2: int32
+    let rnw = get_random_reader_n_writer()
+    let dso = SomeInline.deserialize(rnw)
+    var a: SomeInline
+    bigEndian32(a.od.addr, rnw.buffer[0].addr)
+    littleEndian32(a.sd.addr, rnw.buffer[4].addr)
+    bigEndian32(a.od2.addr, rnw.buffer[8].addr)
+    check(dso.od == a.od)
+    check(dso.sd == a.sd)
+    check(dso.od2 == a.od2)

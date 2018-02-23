@@ -74,3 +74,16 @@ suite "Complex tests":
     random_rnw.setPosition(0)
     dsmo.serialize(random_rnw)
     check(true)
+
+  test "Nested distinct":
+    serializable:
+      type
+        DistinctType = distinct int32
+        WDist = object
+          a: int32
+          subtype: DistinctType
+    let rnw = get_random_reader_n_writer()
+    let dsmo = WDist.deserialize(rnw)
+    rnw.setPosition(0)
+    dsmo.serialize(rnw)
+    check(true)

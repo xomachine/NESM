@@ -23,7 +23,7 @@ suite "Dynamic structure tests":
         MySeqObj = object
           a: seq[int32]
     var obj: MySeqObj
-    obj.a = random_seq_with(int32(random(100)))
+    obj.a = random_seq_with(int32(rand(100)))
     let rnw = get_reader_n_writer()
     obj.serialize(rnw)
     rnw.setPosition(0)
@@ -39,7 +39,7 @@ suite "Dynamic structure tests":
           a: seq[seq[int32]]
     var obj: MySeqSeqObj
     obj.a = random_seq_with(
-              random_seq_with(int32(random(100))))
+              random_seq_with(int32(rand(100))))
     let rnw = get_reader_n_writer()
     obj.serialize(rnw)
     rnw.setPosition(0)
@@ -58,8 +58,8 @@ suite "Dynamic structure tests":
           b: string
           c: int32
     var o: MyStrObj
-    o.a = random(1000).int32
-    o.c = random(1000).int32
+    o.a = rand(1000).int32
+    o.c = rand(1000).int32
     o.b = get_random_string()
     let rnw = get_reader_n_writer()
     o.serialize(rnw)
@@ -243,3 +243,13 @@ suite "Dynamic structure tests":
     check(d.d == o.d)
     check(d.s == o.s)
     check(o.size() == 9)
+
+  test "else: discard":
+    serializable:
+      type ED = object
+        case a: uint8
+        else: discard
+    let rnw = get_random_reader_n_writer()
+    let o = ED.deserialize(rnw)
+    rnw.setPosition(0)
+    o.serialize(rnw)

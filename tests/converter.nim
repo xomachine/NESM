@@ -38,4 +38,24 @@ suite "Converter tests":
     var b = 0.AInt
     bigEndian32(b.addr, rnw.buffer[0].addr)
     check(b == a)
-
+  test "Reusage of static":
+    toSerializable(MD5Digest, dynamic: false)
+    serializable:
+      static:
+        type Reuser = object
+          a: MD5Digest
+    let rnw = get_random_reader_n_writer()
+    let da = Reuser.deserialize(rnw)
+    rnw.setPosition(0)
+    da.serialize(rnw)
+    check(true)
+  test "Context shadowing":
+    type
+      A = enum
+        a
+      B = enum
+        b
+    toSerializable(A, size: 1)
+    toSerializable(B, size: 1, dynamic: false)
+    check(size(a) == size(B))
+    check(size(a) == 1)

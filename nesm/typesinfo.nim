@@ -1,7 +1,7 @@
 
 from macros import error, warning
-from macros import NimNodeKind, nnkEnumTy
-from tables import Table
+from macros import NimNodeKind, nnkEnumTy, NimIdent
+from tables import Table, initTable
 
 const basic_types = [
   "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
@@ -9,10 +9,11 @@ const basic_types = [
 ]
 
 type
+  BodyGenerator* = proc (source: NimNode): NimNode
   TypeChunk* = object
-    size*: proc(source: NimNode): NimNode
-    serialize*: proc(source: NimNode): NimNode
-    deserialize*: proc(source: NimNode): NimNode
+    size*: BodyGenerator
+    serialize*: BodyGenerator
+    deserialize*: BodyGenerator
     dynamic*: bool
     has_hidden*: bool
     case nodekind*: NimNodeKind
@@ -20,12 +21,30 @@ type
       maxcount*: uint64
     else: discard
 
+  SizeCapture* = tuple
+    size: NimNode
+    depth: Natural
+
+  Overrides* = tuple
+    size: seq[SizeCapture]
+    sizeof: seq[SizeCapture]
+
   Context* = object
     declared*: Table[string, TypeChunk]
+    overrides*: Overrides
+    depth*: Natural
     is_static*: bool
     swapEndian*: bool
 
-proc isBasic*(thetype: string): bool =
+proc initContext*(): Context {.compileTime.} =
+  result.overrides.size = newSeq[SizeCapture]()
+  result.overrides.sizeof = newSeq[SizeCapture]()
+  result.declared = initTable[string, TypeChunk]()
+  result.depth = 0
+  result.is_static = false
+  result.swapEndian = false
+
+proc isBasic*(thetype: string): bool {.compileTime.} =
   thetype in basic_types
 
 proc estimateBasicSize*(thetype: string): int {.compileTime.} =

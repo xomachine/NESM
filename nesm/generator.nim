@@ -1,37 +1,63 @@
 import macros
-from nesm.typesinfo import isBasic, estimateBasicSize
-from nesm.typesinfo import TypeChunk, Context
-from tables import Table, contains, `[]`, `[]=`, initTable,
-                   pairs
-from strutils import `%`
-from sequtils import mapIt, foldl, toSeq, filterIt
+from typesinfo import TypeChunk, Context
 
-proc genTypeChunk*(context: Context, thetype: NimNode): TypeChunk {.compileTime.}
-proc correct_sum*(part_size: NimNode): NimNode {.compileTime.}
-proc unfold*(node: NimNode): NimNode =
-  if node.kind == nnkStmtList and node.len == 1:
-    node.last
-  else:
-    node
+proc genTypeChunk*(immutableContext: Context,
+                   thetype: NimNode): TypeChunk {.compileTime.}
 
 static:
-  let STREAM_NAME* = !"thestream"
+  let STREAM_NAME* = newIdentNode("thestream")
 
-from nesm.objects import genObject
-from nesm.basics import genBasic
-from nesm.periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
-from nesm.enums import genEnum
-from nesm.sets import genSet
+from tables import Table, contains, `[]`, `[]=`, initTable, pairs
+from sequtils import mapIt, foldl, toSeq, filterIt
+from strutils import `%`
+from utils import unfold, correct_sum
+from typesinfo import isBasic, estimateBasicSize
+from objects import genObject
+from basics import genBasic
+from periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
+from enums import genEnum
+from sets import genSet
 
 
-proc correct_sum(part_size: NimNode): NimNode =
-  let result_node = newIdentNode("result")
-  if part_size.kind in [nnkStmtList, nnkCaseStmt]:
-    part_size
+proc dig(node: NimNode, depth: Natural): NimNode {.compileTime.} =
+  if depth == 0:
+    return node
+  case node.kind
+  of nnkDotExpr:
+    node.expectMinLen(1)
+    node[0].dig(depth - 1)
+  of nnkCall:
+    node.expectMinLen(2)
+    node[1].dig(depth - 1)
+  of nnkEmpty:
+    node
+  of nnkIdent, nnkSym:
+    error("Too big depth to dig: " & $depth)
+    newEmptyNode()
   else:
-    result_node.infix("+=", part_size)
+    error("Unknown symbol: " & node.treeRepr)
+    newEmptyNode()
 
-proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
+proc insert_source(length_declaration, source: NimNode,
+                   depth: Natural): NimNode  =
+  if length_declaration.kind == nnkCurly:
+    if length_declaration.len == 1 and length_declaration[0].kind == nnkCurly:
+      return length_declaration[0].insert_source(source, depth + 1)
+    elif length_declaration.len == 0:
+      return source.dig(depth)
+  if length_declaration.len == 0:
+    return length_declaration
+  else:
+    result = newNimNode(length_declaration.kind)
+    for child in length_declaration.children():
+      result.add(child.insert_source(source, depth))
+
+proc incrementDepth(ctx: Context): Context {.compileTime.} =
+  result = ctx
+  result.depth += 1
+
+proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
+  let context = immutableContext.incrementDepth()
   result.has_hidden = false
   result.nodekind = thetype.kind
   case thetype.kind
@@ -43,6 +69,25 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
     if plaintype.isBasic():
       let size = estimateBasicSize(plaintype)
       result = context.genBasic(size)
+      case context.overrides.sizeof.len:
+      of 0: discard
+      of 1:
+        assert(not context.is_static,
+               "Sizeof option is not allowed in the static context!")
+        assert(plaintype[0..2] in ["uin", "int"],
+               "The sizeof field must be an integer type!")
+        let prev_serialize = result.serialize
+        let capture = context.overrides.sizeof[0]
+        let relative_depth = context.depth - capture.depth
+        result.serialize = proc(source: NimNode): NimNode =
+          let origin = capture.size.insert_source(source, relative_depth)
+          let tmpvar = nskLet.genSym("seqLen")
+          let preser = prev_serialize(tmpvar)
+          quote do:
+            let `tmpvar` = cast[`thetype`](`origin`.len)
+            `preser`
+      else:
+        error("It is impossible to use more than one sizeof options at once!")
     elif plaintype in context.declared:
       let declared_type = context.declared[plaintype]
       if declared_type.dynamic and context.is_static:
@@ -61,9 +106,25 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
     elif thetype.repr == "string":
       if context.is_static:
         error("Strings are not allowed in static context")
-      let len_proc = proc (s: NimNode):NimNode =
-        (quote do: len(`s`)).unfold()
-      result = context.genPeriodic(newEmptyNode(), len_proc)
+      assert(context.overrides.size.len in 0..1, "To many 'size' options")
+      if context.overrides.size.len > 0:
+        let capture = context.overrides.size[0]
+        let size = capture.size
+        let relative_depth = context.depth - capture.depth
+        let len_proc = proc (s: NimNode): NimNode =
+          (quote do: `s`.len()).unfold()
+        result = context.genPeriodic(newEmptyNode(), len_proc)
+        let olddeser = result.deserialize
+        result.deserialize = proc (s: NimNode): NimNode =
+          let origin = size.insert_source(s, relative_depth)
+          let deser = olddeser(s)
+          quote do:
+            `s` = newString(`origin`)
+            `deser`
+      else:
+        let len_proc = proc (s: NimNode): NimNode =
+            (quote do: len(`s`)).unfold()
+        result = context.genPeriodic(newEmptyNode(), len_proc)
     elif thetype.repr == "cstring":
       if context.is_static:
         error("CStrings are not allowed in static context")
@@ -101,9 +162,25 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
         error("Dynamic types are not supported in static" &
               " structures")
       let elem = thetype[1]
-      let seqLen = proc (source: NimNode): NimNode =
-        (quote do: len(`source`)).unfold()
-      result = context.genPeriodic(elem, seqLen)
+      if context.overrides.size.len > 0:
+        var subcontext = context
+        let capture = subcontext.overrides.size.pop()
+        let size = capture.size
+        let relative_depth = context.depth - capture.depth
+        let seqLen = proc (s: NimNode): NimNode =
+          (quote do: `s`.len()).unfold()
+        result = subcontext.genPeriodic(elem, seqLen)
+        let olddeser = result.deserialize
+        result.deserialize = proc (s: NimNode): NimNode =
+          let origin = size.insert_source(s, relative_depth)
+          let deser = olddeser(s)
+          quote do:
+            `s` = newSeq[`elem`](`origin`)
+            `deser`
+      else:
+        let seqLen = proc (source: NimNode): NimNode =
+          (quote do: len(`source`)).unfold()
+        result = context.genPeriodic(elem, seqLen)
     of "set":
       result = context.genSet(thetype)
     else:
@@ -140,14 +217,14 @@ proc genTypeChunk(context: Context, thetype: NimNode): TypeChunk =
         `serialization`
     result.deserialize = proc(source: NimNode): NimNode =
       let deserialization = distincted.deserialize(tmp)
-      let r = !"result"
       quote do:
         var `tmp` = cast[`basetype`](`source`)
         `deserialization`
-        cast[type(`r`)](`tmp`)
+        `source` = cast[type(`source`)](`tmp`)
+  of nnkNilLit:
+    result = context.genObject(newTree(nnkRecList, thetype))
   else:
-    discard
-    error("Unexpected AST: " & thetype.treeRepr)
+    error("Unexpected AST: " & thetype.treeRepr & "\n at " & thetype.lineinfo())
   result.dynamic = not context.is_static
 
 

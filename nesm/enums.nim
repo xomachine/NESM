@@ -1,8 +1,13 @@
 import macros
-from nesm.typesinfo import TypeChunk, Context
-from nesm.basics import genBasic
+from typesinfo import TypeChunk, Context
 
-proc getCount*(declaration: NimNode): uint64 {.compileTime.} =
+
+proc getCount*(declaration: NimNode): uint64 {.compileTime.}
+proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}
+
+from basics import genBasic
+
+proc getCount(declaration: NimNode): uint64 =
   for c in declaration.children():
     case c.kind
     of nnkEnumFieldDef:
@@ -34,18 +39,32 @@ proc estimateEnumSize(highest: uint64): int {.compileTime.} =
   else: 0
 
 
-proc genEnum*(context:Context, declaration: NimNode): TypeChunk {.compileTime.}=
+proc genEnum(context: Context, declaration: NimNode): TypeChunk =
   let count = getCount(declaration)
-  let estimated = estimateEnumSize(count)
-  if estimated == 0: error("Internal error while estimating enum size")
+  let sizeOverrides = len(context.overrides.size)
+  const intErrorMsg = "Only plain int literals allowed in size pragma " &
+                      "under serializable macro, not "
+  let estimated =
+    if sizeOverrides == 0:
+      estimateEnumSize(count)
+    elif sizeOverrides == 1:
+      (let size = context.overrides.size[0][0];
+       if size.kind != nnkIntLit: error(intErrorMsg & size.repr, size);
+       size.intVal.int)
+    else:
+      (error("Incorrect amount of size options encountered", declaration); 0)
+  if estimated == 0:
+    error("Internal error while estimating enum size", declaration)
   result = context.genBasic(estimated)
   result.nodekind = nnkEnumTy
   result.maxcount = count
   when not defined(disableEnumChecks):
     let olddeser = result.deserialize
+    let enumdecl = newStrLitNode(declaration.repr)
     result.deserialize = proc (source: NimNode): NimNode =
       let check = quote do:
         if $(`source`) == $(ord(`source`)) & " (invalid data!)":
-          raise newException(ValueError, "Enum value is out of range!")
+          raise newException(ValueError, "Enum value is out of range: " &
+            $(`source`) & "\nCorrect values are:\n" & `enumdecl`)
       newTree(nnkStmtList, olddeser(source), check)
 

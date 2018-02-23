@@ -65,3 +65,34 @@ suite "Enum size evaluation with increment":
     increment_test(4294967295)
     increment_test(4294967296)
     increment_test(4294967297)
+
+from nesm import serializable, toSerializable
+
+template pragma_test(val: Natural) =
+  block:
+    serializable:
+      static:
+        type sometype {.size: 1.} = enum
+          somefield = val
+    if sometype.sizeof != size(sometype):
+      echo $sometype.sizeof & " != " & $size(sometype) & " on test with val=" &
+           $val
+      check(false)
+
+suite "Explicitly set size of enum":
+  test "1 byte enum":
+    pragma_test(253)
+    pragma_test(254)
+    pragma_test(255)
+    pragma_test(256)
+    pragma_test(257)
+#  test "toSerializable neverfixed test":
+#    type myenum {.size: 1.} = enum
+#      a = 255
+#    toSerializable(myenum, dynamic: false)
+#    check(size(myenum) == 1)
+  test "toSerializable test":
+    type myenum {.size: 1.} = enum
+      a = 255
+    toSerializable(myenum, dynamic: false, size: 1)
+    check(size(myenum) == 1)
