@@ -19,4 +19,19 @@ suite "Bugs":
     rnw.setPosition(0)
     let dt = MNIST_imgs.deserialize(rnw)
     require(dt.data.len == t.data.len)
-    echo dt.data
+
+  test "#7":
+    serializable:
+      type MyType = object
+        kind: byte
+        size: uint32
+        data: seq[byte] as {size: {}.size}
+    let rnw = getReaderNWriter()
+    var t: MyType
+    t.kind = rand(100).byte
+    t.data = randomSeqWith(byte(rand(100)))
+    t.size = uint32(max(1, t.data.len) - 1)
+    t.serialize(rnw)
+    rnw.setPosition(0)
+    let dt = MyType.deserialize(rnw)
+    require(dt.data.len == dt.size.int)
