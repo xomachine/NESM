@@ -112,7 +112,10 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         let size = capture.size
         let relative_depth = context.depth - capture.depth
         let len_proc = proc (s: NimNode): NimNode =
-          (quote do: `s`.len()).unfold()
+          (quote do: (`s`.len())).unfold()
+          # Parentesis is important because it forces genPeriodic to treat
+          # data as array and do not generate length code for it
+          # (it is not very elegant thougth)
         result = context.genPeriodic(newEmptyNode(), len_proc)
         let olddeser = result.deserialize
         result.deserialize = proc (s: NimNode): NimNode =
@@ -168,7 +171,10 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         let size = capture.size
         let relative_depth = context.depth - capture.depth
         let seqLen = proc (s: NimNode): NimNode =
-          (quote do: `s`.len()).unfold()
+          (quote do: (`s`.len())).unfold()
+          # Parentesis is important because it forces genPeriodic to treat
+          # data as array and do not generate length code for it
+          # (it is not very elegant thougth)
         result = subcontext.genPeriodic(elem, seqLen)
         let olddeser = result.deserialize
         result.deserialize = proc (s: NimNode): NimNode =
