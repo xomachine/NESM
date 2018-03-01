@@ -56,6 +56,30 @@ proc incrementDepth(ctx: Context): Context {.compileTime.} =
   result = ctx
   result.depth += 1
 
+proc handleSizeOption(context: Context, elem: NimNode = newEmptyNode()): TypeChunk =
+  var subcontext = context
+  let capture = subcontext.overrides.size.pop()
+  let size = capture.size
+  let relative_depth = context.depth - capture.depth
+  let len_proc = proc (s: NimNode): NimNode =
+    (quote do: (`s`.len())).unfold()
+    # Parentesis is important because it forces genPeriodic to treat
+    # data as array and do not generate length code for it
+    # (it is not very elegant thougth)
+  result = context.genPeriodic(elem, len_proc)
+  let olddeser = result.deserialize
+  result.deserialize = proc (s: NimNode): NimNode =
+    let origin = size.insert_source(s, relative_depth)
+    let deser = olddeser(s)
+    if elem.kind == nnkEmpty:
+      quote do:
+        `s` = newString(`origin`)
+        `deser`
+    else:
+      quote do:
+        `s` = newSeq[`elem`](`origin`)
+        `deser`
+
 proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
   let context = immutableContext.incrementDepth()
   result.has_hidden = false
@@ -108,22 +132,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         error("Strings are not allowed in static context")
       assert(context.overrides.size.len in 0..1, "To many 'size' options")
       if context.overrides.size.len > 0:
-        let capture = context.overrides.size[0]
-        let size = capture.size
-        let relative_depth = context.depth - capture.depth
-        let len_proc = proc (s: NimNode): NimNode =
-          (quote do: (`s`.len())).unfold()
-          # Parentesis is important because it forces genPeriodic to treat
-          # data as array and do not generate length code for it
-          # (it is not very elegant thougth)
-        result = context.genPeriodic(newEmptyNode(), len_proc)
-        let olddeser = result.deserialize
-        result.deserialize = proc (s: NimNode): NimNode =
-          let origin = size.insert_source(s, relative_depth)
-          let deser = olddeser(s)
-          quote do:
-            `s` = newString(`origin`)
-            `deser`
+        result = context.handleSizeOption()
       else:
         let len_proc = proc (s: NimNode): NimNode =
             (quote do: len(`s`)).unfold()
@@ -166,23 +175,8 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
               " structures")
       let elem = thetype[1]
       if context.overrides.size.len > 0:
-        var subcontext = context
-        let capture = subcontext.overrides.size.pop()
-        let size = capture.size
-        let relative_depth = context.depth - capture.depth
-        let seqLen = proc (s: NimNode): NimNode =
-          (quote do: (`s`.len())).unfold()
-          # Parentesis is important because it forces genPeriodic to treat
-          # data as array and do not generate length code for it
-          # (it is not very elegant thougth)
-        result = subcontext.genPeriodic(elem, seqLen)
-        let olddeser = result.deserialize
-        result.deserialize = proc (s: NimNode): NimNode =
-          let origin = size.insert_source(s, relative_depth)
-          let deser = olddeser(s)
-          quote do:
-            `s` = newSeq[`elem`](`origin`)
-            `deser`
+        result = context.handleSizeOption(elem)
+
       else:
         let seqLen = proc (source: NimNode): NimNode =
           (quote do: len(`source`)).unfold()
