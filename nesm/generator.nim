@@ -10,33 +10,13 @@ static:
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from sequtils import mapIt, foldl, toSeq, filterIt
 from strutils import `%`
-from utils import unfold, correct_sum
+from utils import unfold, correct_sum, dig
 from typesinfo import isBasic, estimateBasicSize
 from objects import genObject
 from basics import genBasic
 from periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
 from enums import genEnum
 from sets import genSet
-
-
-proc dig(node: NimNode, depth: Natural): NimNode {.compileTime.} =
-  if depth == 0:
-    return node
-  case node.kind
-  of nnkDotExpr:
-    node.expectMinLen(1)
-    node[0].dig(depth - 1)
-  of nnkCall:
-    node.expectMinLen(2)
-    node[1].dig(depth - 1)
-  of nnkEmpty:
-    node
-  of nnkIdent, nnkSym:
-    error("Too big depth to dig: " & $depth)
-    newEmptyNode()
-  else:
-    error("Unknown symbol: " & node.treeRepr)
-    newEmptyNode()
 
 proc insert_source(length_declaration, source: NimNode,
                    depth: Natural): NimNode  =
@@ -66,7 +46,7 @@ proc handleSizeOption(context: Context, elem: NimNode = newEmptyNode()): TypeChu
     # Parentesis is important because it forces genPeriodic to treat
     # data as array and do not generate length code for it
     # (it is not very elegant thougth)
-  result = context.genPeriodic(elem, len_proc)
+  result = subcontext.genPeriodic(elem, len_proc)
   let olddeser = result.deserialize
   result.deserialize = proc (s: NimNode): NimNode =
     let origin = size.insert_source(s, relative_depth)
@@ -226,5 +206,3 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
   else:
     error("Unexpected AST: " & thetype.treeRepr & "\n at " & thetype.lineinfo())
   result.dynamic = not context.is_static
-
-
