@@ -65,7 +65,8 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
            c[1].kind == nnkTableConstr:
         continue
       elif c[last].kind == nnkTupleTy:
-        var newID = c
+        var newID = newNimNode(c.kind)
+        copyChildrenTo(c, newID)
         newID[last] = cleanupTypeDeclaration(c[last])
         children.add(newID)
       else:
