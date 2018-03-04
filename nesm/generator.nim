@@ -10,33 +10,13 @@ static:
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from sequtils import mapIt, foldl, toSeq, filterIt
 from strutils import `%`
-from utils import unfold, correct_sum
+from utils import unfold, correct_sum, dig
 from typesinfo import isBasic, estimateBasicSize
 from objects import genObject
 from basics import genBasic
 from periodic import genPeriodic, genCStringDeserialize, genCStringSerialize
 from enums import genEnum
 from sets import genSet
-
-
-proc dig(node: NimNode, depth: Natural): NimNode {.compileTime.} =
-  if depth == 0:
-    return node
-  case node.kind
-  of nnkDotExpr:
-    node.expectMinLen(1)
-    node[0].dig(depth - 1)
-  of nnkCall:
-    node.expectMinLen(2)
-    node[1].dig(depth - 1)
-  of nnkEmpty:
-    node
-  of nnkIdent, nnkSym:
-    error("Too big depth to dig: " & $depth)
-    newEmptyNode()
-  else:
-    error("Unknown symbol: " & node.treeRepr)
-    newEmptyNode()
 
 proc insert_source(length_declaration, source: NimNode,
                    depth: Natural): NimNode  =
@@ -55,6 +35,30 @@ proc insert_source(length_declaration, source: NimNode,
 proc incrementDepth(ctx: Context): Context {.compileTime.} =
   result = ctx
   result.depth += 1
+
+proc handleSizeOption(context: Context, elem: NimNode = newEmptyNode()): TypeChunk =
+  var subcontext = context
+  let capture = subcontext.overrides.size.pop()
+  let size = capture.size
+  let relative_depth = context.depth - capture.depth
+  let len_proc = proc (s: NimNode): NimNode =
+    (quote do: (`s`.len())).unfold()
+    # Parentesis is important because it forces genPeriodic to treat
+    # data as array and do not generate length code for it
+    # (it is not very elegant thougth)
+  result = subcontext.genPeriodic(elem, len_proc)
+  let olddeser = result.deserialize
+  result.deserialize = proc (s: NimNode): NimNode =
+    let origin = size.insert_source(s, relative_depth)
+    let deser = olddeser(s)
+    if elem.kind == nnkEmpty:
+      quote do:
+        `s` = newString(`origin`)
+        `deser`
+    else:
+      quote do:
+        `s` = newSeq[`elem`](`origin`)
+        `deser`
 
 proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
   let context = immutableContext.incrementDepth()
@@ -108,19 +112,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         error("Strings are not allowed in static context")
       assert(context.overrides.size.len in 0..1, "To many 'size' options")
       if context.overrides.size.len > 0:
-        let capture = context.overrides.size[0]
-        let size = capture.size
-        let relative_depth = context.depth - capture.depth
-        let len_proc = proc (s: NimNode): NimNode =
-          (quote do: `s`.len()).unfold()
-        result = context.genPeriodic(newEmptyNode(), len_proc)
-        let olddeser = result.deserialize
-        result.deserialize = proc (s: NimNode): NimNode =
-          let origin = size.insert_source(s, relative_depth)
-          let deser = olddeser(s)
-          quote do:
-            `s` = newString(`origin`)
-            `deser`
+        result = context.handleSizeOption()
       else:
         let len_proc = proc (s: NimNode): NimNode =
             (quote do: len(`s`)).unfold()
@@ -163,20 +155,8 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
               " structures")
       let elem = thetype[1]
       if context.overrides.size.len > 0:
-        var subcontext = context
-        let capture = subcontext.overrides.size.pop()
-        let size = capture.size
-        let relative_depth = context.depth - capture.depth
-        let seqLen = proc (s: NimNode): NimNode =
-          (quote do: `s`.len()).unfold()
-        result = subcontext.genPeriodic(elem, seqLen)
-        let olddeser = result.deserialize
-        result.deserialize = proc (s: NimNode): NimNode =
-          let origin = size.insert_source(s, relative_depth)
-          let deser = olddeser(s)
-          quote do:
-            `s` = newSeq[`elem`](`origin`)
-            `deser`
+        result = context.handleSizeOption(elem)
+
       else:
         let seqLen = proc (source: NimNode): NimNode =
           (quote do: len(`source`)).unfold()
@@ -226,5 +206,3 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
   else:
     error("Unexpected AST: " & thetype.treeRepr & "\n at " & thetype.lineinfo())
   result.dynamic = not context.is_static
-
-

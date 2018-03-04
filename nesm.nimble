@@ -1,9 +1,9 @@
 
-version       = "0.4.0"
+version       = "0.4.1"
 author        = "xomachine (Fomichev Dmitriy)"
 description   = "NESM stands for Nim's Easy Serialization Macro. The macro allowing generation of serialization functions by one line of code!"
 license       = "MIT"
-skipDirs      = @["tests"]
+skipDirs      = @["tests", "demos"]
 
 requires "nim >= 0.14.2"
 
