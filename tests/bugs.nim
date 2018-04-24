@@ -35,3 +35,19 @@ suite "Bugs":
     rnw.setPosition(0)
     let dt = MyType.deserialize(rnw)
     require(dt.data.len == dt.size.int)
+
+  test "#9":
+    serializable:
+      type
+        SavedSector = object
+          id: uint8
+        SaveGame = object
+          sectors: seq[SavedSector]
+    let rnw = getReaderNWriter()
+    var t: SaveGame
+    t.sectors = randomSeqWith(SavedSector(id: rand(100).uint8))
+    t.serialize(rnw)
+    rnw.setPosition(0)
+    let dt = SaveGame.deserialize(rnw)
+    require(dt.sectors.len == t.sectors.len)
+    check(dt.sectors == t.sectors)
