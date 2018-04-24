@@ -16,7 +16,7 @@ proc genFields(context: Context, decl: NimNode): FieldChunk {.compileTime.}
 
 from sequtils import toSeq, filterIt, mapIt
 from generator import genTypeChunk
-from utils import unfold, correct_sum, onlyname
+from utils import unfold, onlyname
 from settings import applyOptions, splitSettingsExpr
 import macros
 
@@ -76,8 +76,11 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
     # There are no hidden entries in tuples
     result.has_hidden = false
   result.size = proc (source: NimNode): NimNode =
-    result = newIntLitNode(0)
+    # This variable is for `result += x` statements
     var result_list = newSeq[NimNode]()
+    # All the static integers are collected here to and being summarized at
+    # the compile time to reduce overhead
+    var statics: NimNode = newIntLitNode(0)
     for i in elems.items():
       let n = newIdentNode(i.name)
       let newsource =
@@ -85,16 +88,22 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
         else: source
       let e = i.chunk
       let part_size = e.size(newsource)
-      if context.is_static and not
-        (part_size.kind in [nnkStmtList, nnkCaseStmt]):
-        result = result.infix("+", part_size)
+      case part_size.kind
+      of nnkCaseStmt, nnkStmtList, nnkForStmt:
+        # Statement lists, cases and loops are always contain `result += x`
+        # expressions
+        result_list.add(part_size)
       else:
-        result_list.add(correct_sum(part_size))
-    if not context.is_static:
-      result_list.add(correct_sum(result))
-      result = newStmtList(result_list)
+        statics = statics.infix("+", part_size)
+    if result_list.len == 0:
+      # If there are no `result += x` statements -
+      # just return resulting expression
+      return newTree(nnkPar, statics)
     else:
-      result = newTree(nnkPar, result)
+      # In other case add `result += static expression` statement and return
+      # a list of `result += x` statements
+      result_list.add(newIdentNode("result").infix("+=", statics))
+      return newTree(nnkStmtList, result_list)
   result.serialize = proc(source: NimNode): NimNode =
     result = newStmtList(parseExpr("discard"))
     for i in elems.items():
@@ -138,8 +147,17 @@ proc genCase(context: Context, decl: NimNode): TypeChunk =
     let conditions = children[0..^2]
     let branch = context.genTypeChunk(b.last)
     let size = proc(source: NimNode):NimNode =
+      # All case branches by default are being wrapped with `result += val`
+      # Except the case of statement list, another case or loop
       let casebody = branch.size(source)
-      newTree(b.kind, conditions & @[casebody])
+      case casebody.kind
+      of nnkStmtList, nnkForStmt, nnkCaseStmt:
+        newTree(b.kind, conditions & @[casebody])
+      else:
+        newTree(b.kind, conditions & @[
+          newTree(nnkStmtList,
+                  @[newIdentNode("result").infix("+=", casebody)])
+          ])
     let serialize = proc(source: NimNode): NimNode =
       let casebody = newStmtList(branch.serialize(source))
       newTree(b.kind, conditions & @[casebody])
@@ -176,13 +194,14 @@ proc evalSize(e: NimNode): BiggestInt =
     e.intVal
   of nnkInfix:
     e.expectLen(3)
-    let first = evalSize(e[1])
-    let second = evalSize(e[2])
     case $e[0]
     of "+":
-      first + second
+      evalSize(e[1]) + evalSize(e[2])
     of "*":
-      first * second
+      evalSize(e[1]) * evalSize(e[2])
+    of "+=":
+      # `result += x` should be handled as well
+      evalSize(e[2])
     else:
       error("Unexpected operation: " & e.repr)
       0
