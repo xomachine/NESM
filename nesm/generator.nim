@@ -10,7 +10,7 @@ static:
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from sequtils import mapIt, foldl, toSeq, filterIt
 from strutils import `%`
-from utils import unfold, correct_sum, dig
+from utils import unfold, dig
 from typesinfo import isBasic, estimateBasicSize
 from objects import genObject
 from basics import genBasic

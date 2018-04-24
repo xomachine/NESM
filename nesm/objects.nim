@@ -193,7 +193,7 @@ proc evalSize(e: NimNode): BiggestInt =
     evalSize(e.last)
   of nnkIdent:
     error("Constants are not supported in static object " &
-          "variants")
+          "variants: " & e.repr())
     0
   else:
     error("Unexpected node: " & e.treeRepr &
