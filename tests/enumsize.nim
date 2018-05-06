@@ -86,13 +86,15 @@ suite "Explicitly set size of enum":
     pragma_test(255)
     pragma_test(256)
     pragma_test(257)
-#  test "toSerializable neverfixed test":
-#    type myenum {.size: 1.} = enum
-#      a = 255
-#    toSerializable(myenum, dynamic: false)
-#    check(size(myenum) == 1)
+
   test "toSerializable test":
     type myenum {.size: 1.} = enum
       a = 255
-    toSerializable(myenum, dynamic: false, size: 1)
+    when NimMajor * 10000 + NimMinor * 100 + NimPatch < 1801:
+    # In Nim compiler prior 0.18.1 there is a bug that makes impossible to use
+    # size pragma to detect enum size from toSerializable proc
+    # getTypeImpl was not return any pragmas
+      toSerializable(myenum, dynamic: false, size: 1)
+    else:
+      toSerializable(myenum, dynamic: false)
     check(size(myenum) == 1)
