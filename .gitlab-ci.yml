@@ -40,9 +40,9 @@ test:devel:
     policy: pull
     paths:
     - nim-devel
-  variables:
-    PATH: "$PATH:$PWD/nim-devel/bin"
   script:
+  - |
+    export PATH="nim-devel/bin{PATH:+:$PATH}
     nimble -v
     nim -v
     nimble tests
@@ -57,9 +57,8 @@ test:master:
     policy: pull
     paths:
     - nim-master
-  variables:
-    PATH: "$PATH:$PWD/nim-master/bin"
   script:
+  - export PATH="nim-master/bin{PATH:+:$PATH}
   - nimble -v
   - nim -v
   - nimble tests
@@ -73,9 +72,8 @@ pages:
     policy: pull
     paths:
     - nim-master
-  variables:
-    PATH: "$PATH:$PWD/nim-master/bin"
   script:
+  - export PATH="nim-master/bin{PATH:+:$PATH}
   - mkdir -p public
   - nimble docs
   - cp index.html public/index.html
