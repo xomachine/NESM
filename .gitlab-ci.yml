@@ -1,9 +1,8 @@
 
-image: "yglukhov/nim-base"
+image: "nimlang/nim:latest-alpine"
 
 before_script:
 - nim -v
-
 pages:
   stage: deploy
   script:
@@ -16,9 +15,43 @@ pages:
   only:
   - master
 
-# Tests already being performed by Travis CI
-#test:nimble:
-#  stage: test
-#  script:
-#  - nimble -v
-#  - nimble tests
+test:devel:
+  variables:
+    PATH: "$PWD/nim-devel/bin"
+  cache:
+    paths:
+    - nim-devel
+  stage: test
+  script:
+  - |
+    if [ ! -x nim-devel/bin/nim ]; then
+      git clone -b devel --depth 1 git://github.com/nim-lang/nim nim-devel/
+      cd nim-devel
+      nim c koch
+      ./koch boot -d:release
+      ./koch nimble
+    else
+      cd nim-devel
+      git fetch origin
+      if ! git merge FETCH_HEAD | grep "Already up-to-date"; then
+        bin/nim c koch
+        ./koch boot -d:release
+        ./koch nimble
+      fi
+    fi
+    cd ..
+  - |
+    export PATH="./nim-devel/bin"
+    nimble -v
+    nim -v
+    nimble tests
+  except:
+  - gh-pages
+
+test:master:
+  stage: test
+  script:
+  - nimble -v
+  - nimble tests
+  except:
+  - gh-pages
