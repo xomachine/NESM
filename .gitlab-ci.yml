@@ -7,6 +7,10 @@ build:compiler:
     paths:
     - nim-devel
     - nim-master
+  artifacts:
+    expire_in: 1h
+    paths:
+    - nim-*
   script:
   - |
     for BRANCH in master devel; do
@@ -35,12 +39,8 @@ build:compiler:
 
 test:devel:
   stage: test
-  cache:
-    key: nim-compiler
-    policy: pull
-    paths:
-    - nim-devel
-    - nim-master
+  dependencies:
+  - build:compiler
   script:
   - |
     export PATH="nim-devel/bin{PATH:+:$PATH}"
@@ -53,12 +53,8 @@ test:devel:
 
 test:master:
   stage: test
-  cache:
-    key: nim-compiler
-    policy: pull
-    paths:
-    - nim-devel
-    - nim-master
+  dependencies:
+  - build:compiler
   script:
   - export PATH="nim-master/bin{PATH:+:$PATH}"
   - nimble -v
@@ -69,12 +65,8 @@ test:master:
 
 pages:
   stage: deploy
-  cache:
-    key: nim-compiler
-    policy: pull
-    paths:
-    - nim-devel
-    - nim-master
+  dependencies:
+  - build:compiler
   script:
   - export PATH="nim-master/bin{PATH:+:$PATH}"
   - mkdir -p public
