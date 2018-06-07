@@ -1,0 +1,24 @@
+
+image: "yglukhov/nim-base"
+
+before_script:
+- nim -v
+
+pages:
+  stage: deploy
+  script:
+  - mkdir -p public
+  - nimble docs
+  - cp index.html public/index.html
+  artifacts:
+    paths:
+    - public
+  only:
+  - master
+
+# Tests already being performed by Travis CI
+#test:nimble:
+#  stage: test
+#  script:
+#  - nimble -v
+#  - nimble tests
