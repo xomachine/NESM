@@ -43,7 +43,7 @@ test:devel:
   - build:compiler
   script:
   - |
-    export PATH="nim-devel/bin{PATH:+:$PATH}"
+    export PATH="nim-devel/bin${PATH:+:$PATH}"
     nimble -v
     nim -v
     nimble tests
@@ -56,7 +56,7 @@ test:master:
   dependencies:
   - build:compiler
   script:
-  - export PATH="nim-master/bin{PATH:+:$PATH}"
+  - export PATH="nim-master/bin${PATH:+:$PATH}"
   - nimble -v
   - nim -v
   - nimble tests
@@ -68,7 +68,7 @@ pages:
   dependencies:
   - build:compiler
   script:
-  - export PATH="nim-master/bin{PATH:+:$PATH}"
+  - export PATH="nim-master/bin${PATH:+:$PATH}"
   - mkdir -p public
   - nimble docs
   - cp index.html public/index.html
