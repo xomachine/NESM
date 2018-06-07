@@ -7,14 +7,15 @@ from sequtils import toSeq
 from tables import contains, `[]`, `[]=`
 from streams import Stream
 
-when not defined(nimdoc):
-  from nesm.typesinfo import TypeChunk, Context, initContext
-  from nesm.generator import genTypeChunk
-  from nesm.procgen import generateProcs
-  from nesm.settings import applyOptions, splitSettingsExpr
-else:
-  import endians
+from nesm.typesinfo import TypeChunk, Context, initContext
+from nesm.generator import genTypeChunk
+from nesm.settings import applyOptions, splitSettingsExpr
+when defined(nimdoc):
+  # Workaround to make nimdoc happy
+  proc generateProcs(ctx: Context, n: NimNode): NimNode = discard
   include nesm.documentation
+else:
+  from nesm.procgen import generateProcs
 
 
 static:

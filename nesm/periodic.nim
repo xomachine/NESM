@@ -9,7 +9,7 @@ proc genPeriodic*(context: Context, elem: NimNode,
 
 from basics import genSerialize, genDeserialize
 from generator import genTypeChunk, STREAM_NAME
-from utils import unfold, correct_sum
+from utils import unfold
 from streams import writeData, write, readChar
 
 proc genCStringDeserialize(name: NimNode): NimNode =
@@ -82,7 +82,7 @@ proc genPeriodic(context: Context, elem: NimNode,
       if not chunk_size.findInChilds(index_letter):
         periodic_len.infix("*", chunk_size)
       else:
-        let chunk_expr = correct_sum(chunk_size)
+        let chunk_expr = newIdentNode("result").infix("+=", chunk_size)
         quote do:
           for `index_letter` in 0..<(`periodic_len`):
             `chunk_expr`

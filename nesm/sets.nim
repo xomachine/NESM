@@ -18,7 +18,7 @@ proc genSet(context: Context, declaration: NimNode): TypeChunk =
     let enumtype = context.declared[undertype]
     if enumtype.nodekind != nnkEnumTy:
       error("The type '$1' neither of enum or basic type!" % undertype)
-    result = context.genBasic(int(enumtype.maxcount div 8) + 1)
+    result = context.genBasic(int(enumtype.maxcount + 7) div 8)
   else:
     error("Impossible type under the set: " & declaration.repr)
 

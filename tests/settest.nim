@@ -27,3 +27,18 @@ suite "Sets":
     let o = ESet.deserialize(rnw)
     rnw.setPosition(0)
     o.serialize(rnw)
+
+  test "From #8":
+    serializable:
+      static:
+        type
+          Flag = enum
+            Bit1 = 0
+            Bit8 = 7
+          Obj = object
+            flags: set[Flag]
+    require(Obj.sizeof == size(Obj))
+    let rnw = get_random_reader_n_writer()
+    let o = Obj.deserialize(rnw)
+    rnw.setPosition(0)
+    o.serialize(rnw)
