@@ -1,10 +1,80 @@
+image: gcc
 
-image: "nimlang/nim:latest-alpine"
+build:compiler:
+  stage: build
+  cache:
+    key: nim-compiler
+    paths:
+    - nim-devel
+    - nim-master
+  script:
+  - |
+    for BRANCH in master devel; do
+    if [ ! -x nim-$BRANCH/bin/nim ]; then
+      git clone -b $BRANCH --depth 1 git://github.com/nim-lang/nim nim-$BRANCH/
+      cd nim-$BRANCH
+      git clone --depth 1 git://github.com/nim-lang/csources csources/
+      cd csources
+      sh build.sh
+      cd ..
+      rm -rf csources
+      bin/nim c koch
+      ./koch boot -d:release
+      ./koch nimble
+    else
+      cd nim-$BRANCH
+      git fetch origin
+      if ! git merge FETCH_HEAD | grep "Already up-to-date"; then
+        bin/nim c koch
+        ./koch boot -d:release
+        ./koch nimble
+      fi
+    fi
+    cd ..
+    done
 
-before_script:
-- nim -v
+test:devel:
+  stage: test
+  cache:
+    key: nim-compiler
+    policy: pull
+    paths:
+    - nim-devel
+  variables:
+    PATH: "$PATH:$PWD/nim-devel/bin"
+  script:
+    nimble -v
+    nim -v
+    nimble tests
+  allow_failure: true
+  except:
+  - gh-pages
+
+test:master:
+  stage: test
+  cache:
+    key: nim-compiler
+    policy: pull
+    paths:
+    - nim-master
+  variables:
+    PATH: "$PATH:$PWD/nim-master/bin"
+  script:
+  - nimble -v
+  - nim -v
+  - nimble tests
+  except:
+  - gh-pages
+
 pages:
   stage: deploy
+  cache:
+    key: nim-compiler
+    policy: pull
+    paths:
+    - nim-master
+  variables:
+    PATH: "$PATH:$PWD/nim-master/bin"
   script:
   - mkdir -p public
   - nimble docs
@@ -14,44 +84,3 @@ pages:
     - public
   only:
   - master
-
-test:devel:
-  variables:
-    PATH: "$PWD/nim-devel/bin"
-  cache:
-    paths:
-    - nim-devel
-  stage: test
-  script:
-  - |
-    if [ ! -x nim-devel/bin/nim ]; then
-      git clone -b devel --depth 1 git://github.com/nim-lang/nim nim-devel/
-      cd nim-devel
-      nim c koch
-      ./koch boot -d:release
-      ./koch nimble
-    else
-      cd nim-devel
-      git fetch origin
-      if ! git merge FETCH_HEAD | grep "Already up-to-date"; then
-        bin/nim c koch
-        ./koch boot -d:release
-        ./koch nimble
-      fi
-    fi
-    cd ..
-  - |
-    export PATH="./nim-devel/bin"
-    nimble -v
-    nim -v
-    nimble tests
-  except:
-  - gh-pages
-
-test:master:
-  stage: test
-  script:
-  - nimble -v
-  - nimble tests
-  except:
-  - gh-pages
