@@ -42,11 +42,10 @@ test:devel:
   dependencies:
   - build:compiler
   script:
-  - |
-    export PATH="nim-devel/bin${PATH:+:$PATH}"
-    nimble -v
-    nim -v
-    nimble tests
+  - export PATH="nim-devel/bin${PATH:+:$PATH}"
+  - nimble -v
+  - nim -v
+  - nimble tests
   allow_failure: true
   except:
   - gh-pages
