@@ -40,6 +40,7 @@ test:devel:
     policy: pull
     paths:
     - nim-devel
+    - nim-master
   script:
   - |
     export PATH="nim-devel/bin{PATH:+:$PATH}"
@@ -56,6 +57,7 @@ test:master:
     key: nim-compiler
     policy: pull
     paths:
+    - nim-devel
     - nim-master
   script:
   - export PATH="nim-master/bin{PATH:+:$PATH}"
@@ -71,6 +73,7 @@ pages:
     key: nim-compiler
     policy: pull
     paths:
+    - nim-devel
     - nim-master
   script:
   - export PATH="nim-master/bin{PATH:+:$PATH}"
