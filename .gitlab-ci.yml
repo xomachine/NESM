@@ -10,7 +10,9 @@ build:compiler:
   artifacts:
     expire_in: 1h
     paths:
-    - nim-*
+    - nim-*/bin
+    - nim-*/lib
+    - nim-*/config
   script:
   - |
     for BRANCH in master devel; do
