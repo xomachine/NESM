@@ -1,7 +1,7 @@
 from typesinfo import BodyGenerator, Context
 from streams import newStringStream, Stream
 from tables import `[]=`
-from generator import STREAM_NAME, genTypeChunk
+from generator import getStreamName, genTypeChunk
 from settings import applyOptions
 import macros
 type
@@ -28,6 +28,7 @@ proc makeDeclaration(typenode: NimNode, kind: ProcType, is_exported: bool,
     of deserialize: newIdentNode("result")
     else: nskParam.genSym("obj")
   let body = bodygen(bgsource)
+  let STREAM_NAME = getStreamName()
   case kind
   of serialize:
     quote do:

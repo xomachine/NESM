@@ -5,11 +5,12 @@ proc genBasic*(context: Context, size: int): TypeChunk {.compileTime.}
 proc genSerialize*(name: NimNode, size: NimNode): NimNode {.compileTime.}
 proc genDeserialize*(name: NimNode, size: NimNode): NimNode {.compileTime.}
 
-from generator import STREAM_NAME
+from generator import getStreamName
 from endians import swapEndian16, swapEndian32, swapEndian64
 from streams import writeData, readData
 
 proc genDeserialize*(name: NimNode, size: NimNode): NimNode =
+  let STREAM_NAME = getStreamName()
   quote do:
     assert(`size` ==
            `STREAM_NAME`.readData(`name`.unsafeAddr, `size`),
@@ -29,6 +30,7 @@ proc genDeserializeSwap(name: NimNode,
                         size: int): NimNode {.compileTime.} =
   let isize = newIntLitNode(size)
   let swapcall = genSwapCall(size)
+  let STREAM_NAME = getStreamName()
   quote do:
     var thedata = newString(`isize`)
     assert(`STREAM_NAME`.readData(thedata.addr, `isize`) ==
@@ -37,6 +39,7 @@ proc genDeserializeSwap(name: NimNode,
     `swapcall`(`name`.unsafeAddr, thedata.addr)
 
 proc genSerialize*(name: NimNode, size: NimNode): NimNode =
+  let STREAM_NAME = getStreamName()
   quote do:
     `STREAM_NAME`.writeData(`name`.unsafeAddr, `size`)
 
@@ -44,6 +47,7 @@ proc genSerializeSwap(name: NimNode,
                       size: int): NimNode {.compileTime.} =
   let isize = newIntLitNode(size)
   let swapcall = genSwapCall(size)
+  let STREAM_NAME = getStreamName()
   quote do:
     var thedata = newString(`isize`)
     `swapcall`(thedata.addr, `name`.unsafeAddr)

@@ -1,18 +1,18 @@
 from typesinfo import Context, TypeChunk, estimateBasicSize, isBasic, BodyGenerator
 import macros
 
-
 proc genCStringDeserialize*(name: NimNode): NimNode {.compileTime.}
 proc genCStringSerialize*(name: NimNode): NimNode {.compileTime.}
 proc genPeriodic*(context: Context, elem: NimNode,
                   length: BodyGenerator): TypeChunk {.compileTime.}
 
 from basics import genSerialize, genDeserialize
-from generator import genTypeChunk, STREAM_NAME
+from generator import genTypeChunk, getStreamName
 from utils import unfold
 from streams import writeData, write, readChar
 
 proc genCStringDeserialize(name: NimNode): NimNode =
+  let STREAM_NAME = getStreamName()
   quote do:
     block:
       var str = "" & `STREAM_NAME`.readChar()
@@ -23,6 +23,7 @@ proc genCStringDeserialize(name: NimNode): NimNode =
       `name` = str[0..<index]
 
 proc genCStringSerialize(name: NimNode): NimNode =
+  let STREAM_NAME = getStreamName()
   quote do:
     `STREAM_NAME`.writeData(`name`[0].unsafeAddr,
                             `name`.len)
