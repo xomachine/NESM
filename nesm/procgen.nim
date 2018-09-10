@@ -89,6 +89,7 @@ proc generateProcs(context: var Context, obj: NimNode): NimNode =
   let body = obj[2]
   let typeinfo = genTypeChunk(newcontext, body)
   context.declared[$typenode] = typeinfo
+  context.newfields.add($typenode)
   let size_proc = makeDeclaration(typenode, size, is_shared, context.is_static,
                                   typeinfo.size)
   let stream_serializer = makeDeclaration(typenode, serialize, is_shared,
