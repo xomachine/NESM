@@ -53,7 +53,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
       # problem when accessing to field under case.
       let fchunk = newContext.genFields(declaration[0])
       result.has_hidden = result.has_hidden or fchunk.has_hidden
-      assert fchunk.entries.len == 1
+      doAssert fchunk.entries.len == 1
       let name = fchunk.entries[0].name
       let chunk = fchunk.entries[0].chunk
       elems.add((name, chunk.caseWorkaround()))

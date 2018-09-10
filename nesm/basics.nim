@@ -12,7 +12,7 @@ from streams import writeData, readData
 proc genDeserialize*(name: NimNode, size: NimNode): NimNode =
   let STREAM_NAME = getStreamName()
   quote do:
-    assert(`size` ==
+    doAssert(`size` ==
            `STREAM_NAME`.readData(`name`.unsafeAddr, `size`),
            "Stream was not provided enough data")
 
@@ -33,7 +33,7 @@ proc genDeserializeSwap(name: NimNode,
   let STREAM_NAME = getStreamName()
   quote do:
     var thedata = newString(`isize`)
-    assert(`STREAM_NAME`.readData(thedata.addr, `isize`) ==
+    doAssert(`STREAM_NAME`.readData(thedata.addr, `isize`) ==
            `isize`,
            "Stream has not provided enough data")
     `swapcall`(`name`.unsafeAddr, thedata.addr)

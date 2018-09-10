@@ -67,7 +67,7 @@ proc makeDeserializeStreamConversion(typenode: NimNode,
   quote do:
     proc `procname`(a: typedesc[`typenode`],
                     data: string | seq[byte|char|uint8|int8]): auto =
-      assert(data.len >= `typenode`.`sizeident`(),
+      doAssert(data.len >= `typenode`.`sizeident`(),
              "Given sequence should contain at least " &
              $(`typenode`.`sizeident`()) & " bytes!")
       let ss = newStringStream(cast[string](data))
