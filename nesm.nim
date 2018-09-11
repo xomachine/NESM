@@ -17,73 +17,9 @@ when defined(nimdoc):
 else:
   from nesm/procgen import generateProcs
 
-const NimCummulativeVersion = NimMajor * 10000 + NimMinor * 100 + NimPatch
-when NimCummulativeVersion >= 1801:
-  import macrocache
-  const ctxTable = CacheTable("nesm.nesm.context")
-  # Each entry in ctxTable contains a StmtList of 3 elements:
-  # 0: block with the size proc implementation
-  # 1: block with the serialize proc implementation
-  # 2: block with the deserialize proc implementation
-  let SOURCENAME = "aliassource"
-  proc storeContext(context: Context) {.compileTime.} =
-    let THESOURCENAME = newTree(nnkBracketExpr, newIdentNode(SOURCENAME))
-    for newfield in context.newfields:
-      let chunk = context.declared[newfield]
-      let sizecode = chunk.size(THESOURCENAME)
-      let serializecode = chunk.serialize(THESOURCENAME)
-      let deserializecode = chunk.deserialize(THESOURCENAME)
-      let dynamic = chunk.dynamic.int.newLit()
-      let has_hidden = chunk.has_hidden.int.newLit()
-      let maxcount =
-        if chunk.nodekind == nnkEnumTy:
-          chunk.maxcount.newLit()
-        else:
-          false.newLit()
-      when declared(debug):
-        hint("Adding key: " & newfield)
-      ctxTable[newfield] = quote do:
-        block:
-          `sizecode`
-        block:
-          `serializecode`
-        block:
-          `deserializecode`
-        `dynamic`
-        `has_hidden`
-        `maxcount`
-  proc getContext(): Context {.compileTime.} =
-    let THESOURCENAME = newIdentNode(SOURCENAME)
-    result = initContext()
-    for k, v in ctxTable:
-      var tc: TypeChunk
-      when declared(debug):
-        hint("Extracting key: " & k)
-      # >[0]<block "Name"[0]: >[1]<
-      let sizecode = v[0][1]
-      let serializecode = v[1][1]
-      let deserializecode = v[2][1]
-      tc.size = proc(source: NimNode): NimNode =
-        quote do:
-          block:
-            let `THESOURCENAME` = `source`.unsafeAddr
-            `sizecode`
-      tc.deserialize = proc(source: NimNode): NimNode =
-        quote do:
-          block:
-            let `THESOURCENAME` = `source`.unsafeAddr
-            `deserializecode`
-      tc.serialize = proc(source: NimNode): NimNode =
-        quote do:
-          block:
-            let `THESOURCENAME` = `source`.unsafeAddr
-            `serializecode`
-      tc.dynamic = v[3].intVal.bool
-      tc.has_hidden = v[4].intVal.bool
-      if v[5].kind == nnkUInt64Lit:
-        tc.nodekind = nnkEnumTy
-        tc.maxcount = cast[uint64](v[5].intVal)
-      result.declared[k] = tc
+const NimCumulativeVersion = NimMajor * 10000 + NimMinor * 100 + NimPatch
+when NimCumulativeVersion >= 1801:
+  from nesm/cache import storeContext, getContext
 else:
   static:
     var ctx = initContext()
