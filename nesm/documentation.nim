@@ -51,13 +51,13 @@
 ##     discard
 ##     assert(4 ==
 ##         thestream.readData(result.weight.unsafeAddr, 4),
-##            "Stream was not provided enough data")
+##            "Stream has not provided enough data")
 ##     assert(4 ==
 ##         thestream.readData(result.diameter.unsafeAddr, 4),
-##            "Stream was not provided enough data")
+##            "Stream has not provided enough data")
 ##     assert(1 ==
 ##         thestream.readData(result.isHollow.unsafeAddr, 1),
-##            "Stream was not provided enough data")
+##            "Stream has not provided enough data")
 ##
 ## As you may see from the code above, the macro generates three kinds
 ## of procedures: serializer, deserializer and size estimator.

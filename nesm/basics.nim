@@ -14,7 +14,7 @@ proc genDeserialize*(name: NimNode, size: NimNode): NimNode =
   quote do:
     doAssert(`size` ==
            `STREAM_NAME`.readData(`name`.unsafeAddr, `size`),
-           "Stream was not provided enough data")
+           "Stream has not provided enough data")
 
 proc genSwapCall(size: int): NimNode {.compileTime.} =
   case size
