@@ -1,7 +1,7 @@
 from nesm import serializable
 from streams import setPosition
 import unittest
-import helpers.rnw
+import helpers/rnw
 
 
 suite "{sizeof: x}":

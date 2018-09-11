@@ -1,4 +1,4 @@
-import helpers.rnw
+import helpers/rnw
 import unittest
 from nesm import serializable
 from streams import setPosition

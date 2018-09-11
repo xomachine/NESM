@@ -3,7 +3,7 @@ from streams import setPosition
 from md5 import Md5digest
 from endians import bigEndian32
 import unittest
-import helpers.rnw
+import helpers/rnw
 
 suite "Converter tests":
   test "Simple object":

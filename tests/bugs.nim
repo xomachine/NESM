@@ -1,5 +1,5 @@
 import nesm
-import helpers.rnw
+import helpers/rnw
 import unittest
 import streams
 

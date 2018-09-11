@@ -1,5 +1,5 @@
 import unittest
-include nesm.enums
+include nesm/enums
 
 {.hint[XDeclaredButNotUsed]:off.}
 macro getsize(q:untyped, d: untyped): untyped =
