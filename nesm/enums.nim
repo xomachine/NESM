@@ -31,13 +31,11 @@ proc getCount(declaration: NimNode): uint64 =
 
 proc estimateEnumSize(highest: uint64): int {.compileTime.} =
   let maxvalue = ((highest) shr 1).int64
-  case maxvalue
-  of 0'i64..int8.high.int64: 1
-  of (int8.high.int64+1)..int16.high.int64: 2
-  of (int16.high.int64+1)..int32.high.int64: 4
-  of (int32.high.int64+1)..int64.high: 8
+  if maxvalue in 0'i64..int8.high.int64: 1
+  elif maxvalue in (int8.high.int64+1)..int16.high.int64: 2
+  elif maxvalue in (int16.high.int64+1)..int32.high.int64: 4
+  elif maxvalue in (int32.high.int64+1)..int64.high: 8
   else: 0
-
 
 proc genEnum(context: Context, declaration: NimNode): TypeChunk =
   let count = getCount(declaration)
