@@ -31,6 +31,7 @@ type
 
   Context* = object
     declared*: Table[string, TypeChunk]
+    newfields*: seq[string]
     overrides*: Overrides
     depth*: Natural
     is_static*: bool
@@ -39,6 +40,7 @@ type
 proc initContext*(): Context {.compileTime.} =
   result.overrides.size = newSeq[SizeCapture]()
   result.overrides.sizeof = newSeq[SizeCapture]()
+  result.newfields = newSeq[string]()
   result.declared = initTable[string, TypeChunk]()
   result.depth = 0
   result.is_static = false

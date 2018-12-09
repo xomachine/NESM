@@ -2,7 +2,7 @@ from nesm import serialize, deserialize
 from nesm import toSerializable
 from streams import Stream, setPosition
 import unittest
-import helpers.rnw
+import helpers/rnw
 
 suite "Non-intrusive serializer":
   test "Simple case":

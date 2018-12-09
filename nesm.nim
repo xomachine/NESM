@@ -7,19 +7,27 @@ from sequtils import toSeq
 from tables import contains, `[]`, `[]=`
 from streams import Stream
 
-from nesm.typesinfo import TypeChunk, Context, initContext
-from nesm.generator import genTypeChunk
-from nesm.settings import applyOptions, splitSettingsExpr
+from nesm/typesinfo import TypeChunk, Context, initContext
+from nesm/generator import genTypeChunk
+from nesm/settings import applyOptions, splitSettingsExpr
 when defined(nimdoc):
   # Workaround to make nimdoc happy
   proc generateProcs(ctx: Context, n: NimNode): NimNode = discard
-  include nesm.documentation
+  include nesm/documentation
 else:
-  from nesm.procgen import generateProcs
+  from nesm/procgen import generateProcs
 
+const NimCumulativeVersion = NimMajor * 10000 + NimMinor * 100 + NimPatch
+when NimCumulativeVersion >= 1801:
+  from nesm/cache import storeContext, getContext
+else:
+  static:
+    var ctx = initContext()
+  proc storeContext(context: Context) {.compileTime.} =
+    ctx = initContext()
+    ctx.declared = context.declared
+  proc getContext(): Context {.compileTime.} = ctx
 
-static:
-  var ctx = initContext()
 proc prepare(context: var Context, statements: NimNode
              ): NimNode {.compileTime.} =
   result = newStmtList()
@@ -78,6 +86,7 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
 
 macro nonIntrusiveBody(typename: typed, o: untyped, de: static[bool]): untyped =
   let typebody = getTypeImpl(typename)
+  let ctx = getContext()
   when defined(debug):
     hint("Deserialize? " & $de)
     hint(typebody.treeRepr)
@@ -120,6 +129,7 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   ## * **endian** - set the endian of serialized object
   ## * **dynamic** - if set to 'false' then object treated as **static**
   result = newStmtList()
+  let ctx = getContext()
   when defined(debug):
     hint(typedecl.symbol.getImpl().treeRepr())
   var ast = typedecl.symbol.getImpl()
@@ -127,7 +137,7 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   when defined(debug):
     hint(ast.treeRepr)
   result.add(newctx.prepare(ast))
-  ctx.declared = newctx.declared
+  newctx.storeContext()
   when defined(debug):
     hint(result.repr)
 
@@ -141,10 +151,11 @@ macro serializable*(typedecl: untyped): untyped =
   ##     # Type declaration
   ##
   result = cleanupTypeDeclaration(typedecl)
+  var ctx = getContext()
   when defined(debug):
     hint(typedecl.treeRepr)
   when not defined(nimdoc):
     result.add(ctx.prepare(typedecl))
   when defined(debug):
     hint(result.repr)
-
+  ctx.storeContext()

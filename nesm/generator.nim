@@ -4,8 +4,8 @@ from typesinfo import TypeChunk, Context
 proc genTypeChunk*(immutableContext: Context,
                    thetype: NimNode): TypeChunk {.compileTime.}
 
-static:
-  let STREAM_NAME* = newIdentNode("thestream")
+proc getStreamName*(): NimNode {.compileTime.} =
+  newIdentNode("thestream")
 
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
 from sequtils import mapIt, foldl, toSeq, filterIt
@@ -76,9 +76,9 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
       case context.overrides.sizeof.len:
       of 0: discard
       of 1:
-        assert(not context.is_static,
+        doAssert(not context.is_static,
                "Sizeof option is not allowed in the static context!")
-        assert(plaintype[0..2] in ["uin", "int"],
+        doAssert(plaintype[0..2] in ["uin", "int"],
                "The sizeof field must be an integer type!")
         let prev_serialize = result.serialize
         let capture = context.overrides.sizeof[0]
@@ -110,7 +110,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
     elif thetype.repr == "string":
       if context.is_static:
         error("Strings are not allowed in static context")
-      assert(context.overrides.size.len in 0..1, "To many 'size' options")
+      doAssert(context.overrides.size.len in 0..1, "To many 'size' options")
       if context.overrides.size.len > 0:
         result = context.handleSizeOption()
       else:
@@ -169,7 +169,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
     result = context.genObject(thetype)
   of nnkObjectTy:
     expectMinLen(thetype, 3)
-    assert(thetype[1].kind == nnkEmpty,
+    doAssert(thetype[1].kind == nnkEmpty,
            "Inheritence not supported in serializable")
     return context.genTypeChunk(thetype[2])
   of nnkRefTy:

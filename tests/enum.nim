@@ -1,7 +1,7 @@
 
 from nesm import serializable
 from streams import setPosition
-import helpers.rnw
+import helpers/rnw
 import unittest
 from macros import hint
 

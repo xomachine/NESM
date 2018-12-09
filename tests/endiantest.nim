@@ -1,6 +1,6 @@
 from nesm import serializable
 from endians import bigEndian32, littleEndian32
-import helpers.rnw
+import helpers/rnw
 import unittest
 
 suite "Endianness support":

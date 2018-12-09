@@ -1,7 +1,7 @@
 import unittest
-import helpers.rnw
+import helpers/rnw
 from nesm import serializable
-from helpers.serializeimport import ImportedType
+from helpers/serializeimport import ImportedType
 from streams import setPosition
 
 suite "Nested types":

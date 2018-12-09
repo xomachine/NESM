@@ -1,22 +1,15 @@
 image: gcc
 
-build:compiler:
-  stage: build
+.build:compiler: &nimbuild
   cache:
-    key: nim-compiler
+    key: nim-${NIMBRANCH}
     paths:
-    - nim-devel
-    - nim-master
-  artifacts:
-    expire_in: 1h
-    paths:
-    - nim-*
-  script:
+    - nim-${NIMBRANCH}
+  before_script:
   - |
-    for BRANCH in master devel; do
-    if [ ! -x nim-$BRANCH/bin/nim ]; then
-      git clone -b $BRANCH --depth 1 git://github.com/nim-lang/nim nim-$BRANCH/
-      cd nim-$BRANCH
+    if [ ! -x nim-${NIMBRANCH}/bin/nim ]; then
+      git clone -b ${NIMBRANCH} --depth 1 git://github.com/nim-lang/nim nim-${NIMBRANCH}/
+      cd nim-${NIMBRANCH}
       git clone --depth 1 git://github.com/nim-lang/csources csources/
       cd csources
       sh build.sh
@@ -26,7 +19,7 @@ build:compiler:
       ./koch boot -d:release
       ./koch nimble
     else
-      cd nim-$BRANCH
+      cd nim-${NIMBRANCH}
       git fetch origin
       if ! git merge FETCH_HEAD | grep "Already up-to-date"; then
         bin/nim c koch
@@ -35,39 +28,36 @@ build:compiler:
       fi
     fi
     cd ..
-    done
+    export PATH="nim-${NIMBRANCH}/bin${PATH:+:$PATH}"
+
+.test: &testscript
+  stage: test
+  except:
+  - gh-pages
+  script:
+  - nimble -v
+  - nim -v
+  - nimble tests
 
 test:devel:
-  stage: test
-  dependencies:
-  - build:compiler
-  script:
-  - export PATH="nim-devel/bin${PATH:+:$PATH}"
-  - nimble -v
-  - nim -v
-  - nimble tests
+  variables:
+    NIMBRANCH: devel
   allow_failure: true
-  except:
-  - gh-pages
+  <<: *nimbuild
+  <<: *testscript
 
 test:master:
-  stage: test
-  dependencies:
-  - build:compiler
-  script:
-  - export PATH="nim-master/bin${PATH:+:$PATH}"
-  - nimble -v
-  - nim -v
-  - nimble tests
-  except:
-  - gh-pages
+  variables:
+    NIMBRANCH: master
+  <<: *nimbuild
+  <<: *testscript
 
 pages:
   stage: deploy
-  dependencies:
-  - build:compiler
+  variables:
+    NIMBRANCH: master
+  <<: *nimbuild
   script:
-  - export PATH="nim-master/bin${PATH:+:$PATH}"
   - mkdir -p public
   - nimble docs
   - cp index.html public/index.html

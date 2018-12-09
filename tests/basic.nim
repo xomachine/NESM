@@ -51,22 +51,22 @@ suite "Trivial types":
     serializable:
       static:
         type
-          MyAInt = distinct array[ARRAYSIZE, int32]
+          MyCAInt = distinct array[ARRAYSIZE, int32]
 
-    let mi = MyAInt([ 4'i32 , 5'i32,6'i32,3'i32,3'i32,4'i32,1'i32,
+    let mi = MyCAInt([ 4'i32 , 5'i32,6'i32,3'i32,3'i32,4'i32,1'i32,
       1'i32,5'i32,7'i32,8'i32])
     let smi = mi.serialize()
-    let dsmi = MyAInt.deserialize(@smi)
-    check(smi.len == MyAInt.sizeof)
+    let dsmi = MyCAInt.deserialize(@smi)
+    check(smi.len == MyCAInt.sizeof)
     require(mi.repr == dsmi.repr)
 
   test "Tuples":
     serializable:
       static:
         type
-          MyAInt =  tuple[q:char, w:int64]
+          MyTInt =  tuple[q:char, w:int64]
 
-    let mi = MyAInt((q:'q',w:4'i64))
+    let mi = MyTInt((q:'q',w:4'i64))
     let smi = mi.serialize()
-    let dsmi = MyAInt.deserialize(@smi)
+    let dsmi = MyTInt.deserialize(@smi)
     require(mi.repr == dsmi.repr)

@@ -1,7 +1,7 @@
 from typesinfo import BodyGenerator, Context
 from streams import newStringStream, Stream
 from tables import `[]=`
-from generator import STREAM_NAME, genTypeChunk
+from generator import getStreamName, genTypeChunk
 from settings import applyOptions
 import macros
 type
@@ -28,6 +28,7 @@ proc makeDeclaration(typenode: NimNode, kind: ProcType, is_exported: bool,
     of deserialize: newIdentNode("result")
     else: nskParam.genSym("obj")
   let body = bodygen(bgsource)
+  let STREAM_NAME = getStreamName()
   case kind
   of serialize:
     quote do:
@@ -66,7 +67,7 @@ proc makeDeserializeStreamConversion(typenode: NimNode,
   quote do:
     proc `procname`(a: typedesc[`typenode`],
                     data: string | seq[byte|char|uint8|int8]): auto =
-      assert(data.len >= `typenode`.`sizeident`(),
+      doAssert(data.len >= `typenode`.`sizeident`(),
              "Given sequence should contain at least " &
              $(`typenode`.`sizeident`()) & " bytes!")
       let ss = newStringStream(cast[string](data))
@@ -87,7 +88,8 @@ proc generateProcs(context: var Context, obj: NimNode): NimNode =
   let typenode = if is_shared: typedeclaration.basename else: typedeclaration
   let body = obj[2]
   let typeinfo = genTypeChunk(newcontext, body)
-  context.declared[$typenode] = typeinfo
+  context.declared[typenode.repr] = typeinfo
+  context.newfields.add(typenode.repr)
   let size_proc = makeDeclaration(typenode, size, is_shared, context.is_static,
                                   typeinfo.size)
   let stream_serializer = makeDeclaration(typenode, serialize, is_shared,
