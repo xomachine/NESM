@@ -21,6 +21,8 @@ const NimCumulativeVersion = NimMajor * 10000 + NimMinor * 100 + NimPatch
 when NimCumulativeVersion >= 1801:
   from nesm/cache import storeContext, getContext
 else:
+  proc getImpl(s: NimNode): NimNode =
+    s.symbol.getImpl()
   static:
     var ctx = initContext()
   proc storeContext(context: Context) {.compileTime.} =
@@ -131,8 +133,8 @@ macro toSerializable*(typedecl: typed, settings: varargs[untyped]): untyped =
   result = newStmtList()
   let ctx = getContext()
   when defined(debug):
-    hint(typedecl.symbol.getImpl().treeRepr())
-  var ast = typedecl.symbol.getImpl()
+    hint(typedecl.getImpl().treeRepr())
+  var ast = typedecl.getImpl()
   var newctx = ctx.applyOptions(settings)
   when defined(debug):
     hint(ast.treeRepr)
