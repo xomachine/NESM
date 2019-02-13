@@ -187,7 +187,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
     expectMinLen(thetype, 1)
     let basetype = thetype[0]
     let distincted = context.genTypeChunk(basetype)
-    let tmp = nskVar.genSym("tmp")
+    let tmp = newIdentNode("tmp")
     result.has_hidden = true
     result.size = distincted.size
     result.serialize = proc(source: NimNode): NimNode =

@@ -25,18 +25,20 @@ proc caseWorkaround(tc: TypeChunk): TypeChunk =
   result = tc
   let oldser = tc.serialize
   let olddeser = tc.deserialize
-  let tmpvar = nskVar.genSym("tmp")
+  let tmpvar = newIdentNode("tmp")
   result.serialize = proc(s:NimNode): NimNode =
     let os = oldser(tmpvar)
     quote do:
-      var `tmpvar` = `s`
-      `os`
+      block:
+        var `tmpvar` = `s`
+        `os`
   result.deserialize = proc(s:NimNode): NimNode =
     let ods = olddeser(tmpvar)
     quote do:
-      var `tmpvar`: type(`s`)
-      `ods`
-      `s` = `tmpvar`
+      block:
+        var `tmpvar`: type(`s`)
+        `ods`
+        `s` = `tmpvar`
 
 proc genObject(context: Context, thetype: NimNode): TypeChunk =
   var elems = newSeq[Field]()
