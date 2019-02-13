@@ -10,6 +10,7 @@ from endians import swapEndian16, swapEndian32, swapEndian64
 from streams import writeData, readData
 # FIXME: workaround for https://github.com/nim-lang/Nim/issues/7889
 proc readData() = discard
+proc writeData() = discard
 
 proc genDeserialize*(name: NimNode, size: NimNode): NimNode =
   let STREAM_NAME = getStreamName()
