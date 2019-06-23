@@ -2,7 +2,7 @@ import unittest
 include nesm/enums
 
 {.hint[XDeclaredButNotUsed]:off.}
-macro getsize(q:untyped, d: untyped): untyped =
+macro store_enum_size(q: untyped, d: untyped): untyped =
   result = newStmtList()
   let val = estimateEnumSize(d.last.last[2].getCount())
   result.add(d)
@@ -12,7 +12,7 @@ macro getsize(q:untyped, d: untyped): untyped =
 
 template simple_test(val: Natural) =
   block:
-    getsize(someval):
+    store_enum_size(someval):
       type sometype = enum
         somefield = val
     if sometype.sizeof != someval:
@@ -38,7 +38,7 @@ suite "Simple enum size evaluation":
 
 template increment_test(val: Natural) =
   block:
-    getsize(someval):
+    store_enum_size(someval):
       type sometype = enum
         somefield = val
         secondfield

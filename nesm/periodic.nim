@@ -11,6 +11,9 @@ from generator import genTypeChunk, getStreamName
 from utils import unfold
 from streams import writeData, write, readChar
 
+# Another workaround for https://github.com/nim-lang/Nim/issues/7889
+proc writeData() = discard
+
 proc genCStringDeserialize(name: NimNode): NimNode =
   let STREAM_NAME = getStreamName()
   quote do:
@@ -44,7 +47,7 @@ proc genPeriodic(context: Context, elem: NimNode,
   let is_array = lencheck.kind != nnkCall
   let lenvarname =
     if is_array: lencheck
-    else: nskVar.genSym("length")
+    else: newIdentNode("length" & $context.depth)
   if (elemString.isBasic() or elem.kind == nnkEmpty) and
      not context.swapEndian:
     # For seqs or arrays of trivial objects
@@ -75,7 +78,7 @@ proc genPeriodic(context: Context, elem: NimNode,
   else:
     # Complex subtypes
     let onechunk = context.genTypeChunk(elem)
-    let index_letter = nskForVar.genSym("index")
+    let index_letter = newIdentNode("index")
     result.size = proc (s: NimNode): NimNode =
       let periodic_len = length(s)
       let newsource = (quote do: `s`[`index_letter`]).unfold()
@@ -120,9 +123,10 @@ proc genPeriodic(context: Context, elem: NimNode,
       let shc_ser = size_header_chunk.serialize(lenvarname)
       let pr_ser = preresult.serialize(s)
       quote do:
-        var `lenvarname` = `lens`
-        `shc_ser`
-        `pr_ser`
+        block:
+          var `lenvarname`: int32 = int32(`lens`)
+          `shc_ser`
+          `pr_ser`
     result.deserialize = proc(s:NimNode): NimNode =
       let init_template =
         if elem.kind == nnkEmpty: (quote do: newString).unfold()
@@ -130,8 +134,9 @@ proc genPeriodic(context: Context, elem: NimNode,
       let sd = size_header_chunk.deserialize(lenvarname)
       let deserialization = preresult.deserialize(s)
       quote do:
-        var `lenvarname`: int32
-        `sd`
-        `s` = `init_template`(`lenvarname`)
-        `deserialization`
+        block:
+          var `lenvarname`: int32
+          `sd`
+          `s` = `init_template`(`lenvarname`)
+          `deserialization`
 
