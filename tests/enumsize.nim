@@ -1,4 +1,5 @@
 import unittest
+from strutils import contains
 include nesm/enums
 
 {.hint[XDeclaredButNotUsed]:off.}
@@ -30,11 +31,12 @@ suite "Simple enum size evaluation":
     simple_test(65535)
     simple_test(65536)
     simple_test(65537)
-  test "4->8 byte enum":
-    simple_test(4294967294)
-    simple_test(4294967295)
-    simple_test(4294967296)
-    simple_test(4294967297)
+  if "64" in hostCPU:
+    test "4->8 byte enum":
+      simple_test(4294967294)
+      simple_test(4294967295)
+      simple_test(4294967296)
+      simple_test(4294967297)
 
 template increment_test(val: Natural) =
   block:
@@ -59,12 +61,13 @@ suite "Enum size evaluation with increment":
     increment_test(65535)
     increment_test(65536)
     increment_test(65537)
-  test "4->8 byte enum":
-    increment_test(4294967293)
-    increment_test(4294967294)
-    increment_test(4294967295)
-    increment_test(4294967296)
-    increment_test(4294967297)
+  if "64" in hostCPU:
+    test "4->8 byte enum":
+      increment_test(4294967293)
+      increment_test(4294967294)
+      increment_test(4294967295)
+      increment_test(4294967296)
+      increment_test(4294967297)
 
 from nesm import serializable, toSerializable
 
