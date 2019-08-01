@@ -3,6 +3,7 @@ from streams import newStringStream, Stream
 from tables import `[]=`
 from generator import getStreamName, genTypeChunk
 from settings import applyOptions
+from bytestream import ByteCollection, newByteStream
 import macros
 type
   ProcType = enum
@@ -66,11 +67,11 @@ proc makeDeserializeStreamConversion(typenode: NimNode,
   let procname = if is_exported: rawprocname.postfix("*") else: rawprocname
   quote do:
     proc `procname`(a: typedesc[`typenode`],
-                    data: string | seq[byte|char|uint8|int8]): auto =
+                    data: ByteCollection): auto =
       doAssert(data.len >= `typenode`.`sizeident`(),
              "Given sequence should contain at least " &
              $(`typenode`.`sizeident`()) & " bytes!")
-      let ss = newStringStream(cast[string](data))
+      let ss = newByteStream(data)
       `rawprocname`(`typenode`, ss)
 
 proc generateProcs(context: var Context, obj: NimNode): NimNode =
