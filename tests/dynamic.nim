@@ -3,7 +3,8 @@ import unittest
 from nesm import serializable
 import helpers/rnw
 from sequtils import newSeqWith
-from streams import setPosition, newStringStream
+from streams import setPosition
+from nesm.bytestream import newByteStream
 
 suite "Dynamic structure tests":
   test "Static object in dynamic context":
@@ -116,8 +117,8 @@ suite "Dynamic structure tests":
     let so = oo.serialize()
     let thedata = "\x03\x00\x00\x00Hi!\x07\x00\x10"
     require(so.len == thedata.len)
-    require(cast[string](so) == thedata)
-    let str_stream = newStringStream(thedata)
+    require(so == thedata)
+    let str_stream = newByteStream(thedata)
     let o = MyPreserved.deserialize(str_stream)
     require(o.n.len == 3)
     check(o.n == "Hi!")
