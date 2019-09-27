@@ -35,7 +35,7 @@ proc genDeserializeSwap(name: NimNode,
   let swapcall = genSwapCall(size)
   let STREAM_NAME = getStreamName()
   quote do:
-    var thedata = newString(`isize`)
+    var thedata: array[`isize`, char]
     doAssert(`STREAM_NAME`.readData(thedata.addr, `isize`) ==
            `isize`,
            "Stream has not provided enough data")
@@ -52,7 +52,7 @@ proc genSerializeSwap(name: NimNode,
   let swapcall = genSwapCall(size)
   let STREAM_NAME = getStreamName()
   quote do:
-    var thedata = newString(`isize`)
+    var thedata: array[`isize`, char]
     `swapcall`(thedata.addr, `name`.unsafeAddr)
     `STREAM_NAME`.writeData(thedata.unsafeAddr, `isize`)
 
