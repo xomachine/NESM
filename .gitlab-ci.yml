@@ -1,4 +1,4 @@
-image: gcc
+image: nimlang/nim:latest
 
 .build:compiler: &nimbuild
   cache:
@@ -8,9 +8,9 @@ image: gcc
   before_script:
   - |
     if [ ! -x nim-${NIMBRANCH}/bin/nim ]; then
-      git clone -b ${NIMBRANCH} --depth 1 git://github.com/nim-lang/nim nim-${NIMBRANCH}/
+      git clone -b ${NIMBRANCH} --depth 5 git://github.com/nim-lang/nim nim-${NIMBRANCH}/
       cd nim-${NIMBRANCH}
-      git clone --depth 1 git://github.com/nim-lang/csources csources/
+      git clone --depth 5 git://github.com/nim-lang/csources csources/
       cd csources
       sh build.sh
       cd ..
@@ -47,16 +47,10 @@ test:devel:
   <<: *testscript
 
 test:master:
-  variables:
-    NIMBRANCH: master
-  <<: *nimbuild
   <<: *testscript
 
 pages:
   stage: deploy
-  variables:
-    NIMBRANCH: master
-  <<: *nimbuild
   script:
   - mkdir -p public
   - nimble docs
