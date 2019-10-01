@@ -40,103 +40,103 @@ proc findInChilds(a, b: NimNode): bool =
         return true
     return false
 
-proc genPeriodic(context: Context, elem: NimNode,
-                 length: BodyGenerator): TypeChunk =
-  let elemString = elem.repr
-  let lencheck = length(newEmptyNode())
-  let is_array = lencheck.kind != nnkCall
-  let lenvarname =
-    if is_array: lencheck
-    else: newIdentNode("length" & $context.depth)
-  if (elemString.isBasic() or elem.kind == nnkEmpty) and
-     not context.swapEndian:
-    # For seqs or arrays of trivial objects
-    let element =
-      if elem.kind == nnkEmpty: "char"
-      else: elemString
-    let elemSize = estimateBasicSize(element)
-    let eSize = newIntLitNode(elemSize)
-    result.size = proc (s: NimNode): NimNode =
-      let arraylen = length(s)
-      arraylen.infix("*", newIntLitNode(elemSize))
-    result.serialize = proc (s: NimNode): NimNode =
+proc addSizeHeader(context: Context, length: BodyGenerator, mkExpr: NimNode, bodychunk: var TypeChunk) =
+  let size_header_chunk = context.genTypeChunk(newIdentNode("int32"))
+  let oldsize = bodychunk.size
+  let lenvarname = newIdentNode("length" & $context.depth)
+  bodychunk.size = proc(s:NimNode):NimNode =
+    let presize = oldsize(s)
+    let headersize = size_header_chunk.size(s)
+    let r = newIdentNode("result")
+    if presize.kind notin [nnkInfix, nnkIntLit, nnkCall]:
+      quote do:
+        `presize`
+        `r` += `headersize`
+    else:
+      headersize.infix("+", presize)
+  let oldserialize = bodychunk.serialize
+  bodychunk.serialize = proc(s:NimNode): NimNode =
+    let lens = length(s)
+    let shc_ser = size_header_chunk.serialize(lenvarname)
+    let pr_ser = oldserialize(s)
+    quote do:
+      block:
+        var `lenvarname`: int32 = int32(`lens`)
+        `shc_ser`
+        `pr_ser`
+  let olddeserialize = bodychunk.deserialize
+  bodychunk.deserialize = proc(s:NimNode): NimNode =
+    let sd = size_header_chunk.deserialize(lenvarname)
+    let deserialization = olddeserialize(s)
+    quote do:
+      block:
+        var `lenvarname`: int32
+        `sd`
+        `s` = `mkExpr`(`lenvarname`)
+        `deserialization`
+
+proc genSimple(context: Context, elem: NimNode,
+               length: BodyGenerator): TypeChunk =
+  let element =
+    if elem.kind == nnkEmpty: "char"
+    else: elem.repr
+  let elemSize = estimateBasicSize(element)
+  let eSize = newIntLitNode(elemSize)
+  proc filler(gen: proc(x:NimNode, y:NimNode): NimNode): proc(s:NimNode): NimNode =
+    result = proc (s: NimNode): NimNode =
       let lens = length(s)
       let size = (quote do: `lens` * `eSize`).unfold()
       let newsource = (quote do: `s`[0]).unfold()
-      let serialization = genSerialize(newsource, size)
+      let serialization = gen(newsource, size)
       quote do:
         if `lens` > 0: `serialization`
-    result.deserialize = proc (s: NimNode): NimNode =
-      let lens = length(s)
-      let size = (quote do: `lens` * `eSize`).unfold()
-      let newsource = (quote do: `s`[0])
-      let deserialization = genDeserialize(newsource, size)
-      quote do:
-        if `lens` > 0: `deserialization`
-    result.dynamic = not context.is_static
-    result.has_hidden = false
+  result.size = proc (s: NimNode): NimNode =
+    let arraylen = length(s)
+    arraylen.infix("*", newIntLitNode(elemSize))
+  result.serialize = filler(genSerialize)
+  result.deserialize = filler(genDeserialize)
+  result.dynamic = not context.is_static
+  result.has_hidden = false
+
+proc genPeriodic(context: Context, elem: NimNode,
+                 length: BodyGenerator): TypeChunk =
+  let elemString = elem.repr
+  let is_dynamic = length(newEmptyNode()).kind == nnkCall
+  let makeExpr =
+    if elem.kind == nnkEmpty:
+      newIdentNode("newString")
+    else:
+      newTree(nnkBracketExpr, newIdentNode("newSeq"), elem)
+  if (elemString.isBasic() or elem.kind == nnkEmpty) and
+     not context.swapEndian:
+    # For seqs or arrays of trivial objects
+    result = context.genSimple(elem, length)
   else:
     # Complex subtypes
     let onechunk = context.genTypeChunk(elem)
     let index_letter = newIdentNode("index")
-    result.size = proc (s: NimNode): NimNode =
-      let periodic_len = length(s)
-      let newsource = (quote do: `s`[`index_letter`]).unfold()
-      let chunk_size = one_chunk.size(newsource)
-      if not chunk_size.findInChilds(index_letter):
-        periodic_len.infix("*", chunk_size)
-      else:
-        let chunk_expr = newIdentNode("result").infix("+=", chunk_size)
+    let generator = proc (f: proc(s:NimNode): NimNode): proc(s:NimNode):NimNode =
+      result = proc(s: NimNode): NimNode =
+        let periodic_len = length(s)
+        let newsource = (quote do: `s`[`index_letter`]).unfold()
+        let chunk_expr = f(newsource)
         quote do:
           for `index_letter` in 0..<(`periodic_len`):
             `chunk_expr`
-    result.serialize = proc(s: NimNode): NimNode =
-      let periodic_len = length(s)
-      let newsource = (quote do: `s`[`index_letter`]).unfold()
-      let chunk_expr = onechunk.serialize(newsource)
-      quote do:
-        for `index_letter` in 0..<(`periodic_len`):
-          `chunk_expr`
-    result.deserialize = proc(s: NimNode): NimNode =
-      let lens = length(s)
-      let newsource = (quote do: `s`[`index_letter`]).unfold()
-      let chunk_expr = onechunk.deserialize(newsource)
-      quote do:
-        for `index_letter` in 0..<(`lens`):
-          `chunk_expr`
-  if not is_array:
-    let size_header_chunk = context.genTypeChunk(
-      newIdentNode("int32"))
-    let preresult = result
-    result.size = proc(s:NimNode):NimNode =
-      let presize = preresult.size(s)
-      let headersize = size_header_chunk.size(s)
+    result.serialize = generator(onechunk.serialize)
+    result.deserialize = generator(onechunk.deserialize)
+    if onechunk.dynamic:
       let r = newIdentNode("result")
-      if presize.kind notin [nnkInfix, nnkIntLit, nnkCall]:
-        quote do:
-          `presize`
-          `r` += `headersize`
-      else:
-        headersize.infix("+", presize)
-    result.serialize = proc(s:NimNode): NimNode =
-      let lens = length(s)
-      let shc_ser = size_header_chunk.serialize(lenvarname)
-      let pr_ser = preresult.serialize(s)
-      quote do:
-        block:
-          var `lenvarname`: int32 = int32(`lens`)
-          `shc_ser`
-          `pr_ser`
-    result.deserialize = proc(s:NimNode): NimNode =
-      let init_template =
-        if elem.kind == nnkEmpty: (quote do: newString).unfold()
-        else: (quote do: newSeq[`elem`]).unfold()
-      let sd = size_header_chunk.deserialize(lenvarname)
-      let deserialization = preresult.deserialize(s)
-      quote do:
-        block:
-          var `lenvarname`: int32
-          `sd`
-          `s` = `init_template`(`lenvarname`)
-          `deserialization`
+      let sizeproc = proc (s:NimNode):NimNode =
+        let sz = onechunk.size(s)
+        r.infix("+=", sz)
+      result.size = generator(sizeproc)
+    else:
+      let independentSize = onechunk.size(newEmptyNode())
+      result.size = proc (s: NimNode): NimNode =
+        let periodic_len = length(s)
+        periodic_len.infix("*", independentSize)
+  # Does not detects arrays
+  if is_dynamic:
+    addSizeHeader(context, length, makeExpr, result)
 

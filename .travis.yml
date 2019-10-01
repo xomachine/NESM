@@ -38,7 +38,7 @@ install:
 before_script:
     - export PATH="nim-$BRANCH/bin${PATH:+:$PATH}"
 script:
-    - nimble tests
+    - nim-$BRANCH/bin/nimble tests
     # Replace uppercase strings!
     #- nim c --cc:$CC --verbosity:0 -r MYFILE.nim
     # Optional: build docs.

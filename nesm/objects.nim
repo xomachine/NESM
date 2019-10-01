@@ -40,6 +40,32 @@ proc caseWorkaround(tc: TypeChunk): TypeChunk =
         `ods`
         `s` = `tmpvar`
 
+proc genWhen(ifexpr, trueResult, falseResult: NimNode): NimNode =
+  quote do:
+    when `ifexpr`:
+      `trueResult`
+    else:
+      `falseResult`
+
+proc handleWhenExpr(context: Context, expression: NimNode): TypeChunk =
+  let ifbranch = expression[0]
+  ifbranch.expectKind(nnkElifBranch)
+  let ifexpr = ifbranch[0]
+  let truePath = context.genObject(ifbranch[1])
+  let falsePath =
+    if expression.len() > 1:
+      context.genObject(expression[1][0])
+    else:
+      context.genObject(newEmptyNode())
+  result.has_hidden = truePath.has_hidden or falsePath.has_hidden
+  result.dynamic = truePath.dynamic or falsePath.dynamic
+  result.size = proc(source: NimNode): NimNode =
+    genWhen(ifexpr, truePath.size(source), falsePath.size(source))
+  result.serialize = proc(source: NimNode): NimNode =
+    genWhen(ifexpr, truePath.serialize(source), falsePath.serialize(source))
+  result.deserialize = proc(source: NimNode): NimNode =
+    genWhen(ifexpr, truePath.deserialize(source), falsePath.deserialize(source))
+
 proc genObject(context: Context, thetype: NimNode): TypeChunk =
   var elems = newSeq[Field]()
   var newContext = context
@@ -49,6 +75,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
     of nnkNilLit:
       continue
     of nnkRecCase:
+      # We got object variant
       expectMinLen(declaration, 2)
       # declaration[0]
       # A bad hackery to avoid expression without address
@@ -62,6 +89,7 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
       let casechunk = newContext.genCase(declaration)
       elems.add(("", casechunk))
     of nnkIdentDefs:
+      # Typical value: type declaration
       declaration.expectMinLen(2)
       if declaration[0] == settingsKeyword and
          declaration[1].kind == nnkTableConstr:
@@ -72,6 +100,11 @@ proc genObject(context: Context, thetype: NimNode): TypeChunk =
         let fchunk = newContext.genFields(declaration)
         elems &= fchunk.entries
         result.has_hidden = result.has_hidden or fchunk.has_hidden
+    of nnkRecWhen:
+      # when: else: expression
+      let rchunk = handleWhenExpr(context, declaration)
+      result.has_hidden = result.has_hidden or rchunk.has_hidden
+      elems.add(("", rchunk))
     else:
       error("Unknown AST: \n" & declaration.repr & "\n" & declaration.treeRepr)
   if thetype.kind == nnkTupleTy:

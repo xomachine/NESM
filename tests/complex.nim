@@ -2,7 +2,7 @@
 import unittest
 from nesm import serializable
 import helpers/rnw
-from streams import newStringStream, setPosition
+from streams import setPosition
 
 suite "Complex tests":
   test "Simple object":

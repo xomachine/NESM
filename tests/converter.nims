@@ -1,1 +1,1 @@
---define:allow_undefined_type_size
+switch("define", "allow_undefined_type_size")
