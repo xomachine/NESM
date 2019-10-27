@@ -5,9 +5,10 @@ when NimMajor > 0 or NimMinor > 17 or (NimMinor == 17 and NimPatch > 2):
 else:
   from random import random
   proc rand[T](a: T): int = random(a)
-from streams import Stream, StringStream, newStringStream
+from streams import Stream, StringStream, newStringStream,
+                    setPosition
 
-export rand
+export rand, setPosition
 
 type
   RandomStream = ref RandomStreamObj
