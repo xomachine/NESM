@@ -93,7 +93,7 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         error("It is impossible to use more than one sizeof options at once!")
     elif plaintype in context.declared:
       let declared_type = context.declared[plaintype]
-      when declared(debug):
+      when defined(debug):
         hint("Reusing already declared: " & plaintype)
       if declared_type.dynamic and context.is_static:
         error("Only static objects can be nested into" &

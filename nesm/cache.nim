@@ -37,13 +37,13 @@ proc storeContext(context: Context) =
       else:
         false.newLit()
     if newfield notin ctxTable:
-      when declared(debug):
+      when defined(debug):
         hint("Adding key: " & newfield)
       ctxTable[newfield] = newStmtList()
       for i in ContextEntry:
         ctxTable[newfield].add(newEmptyNode())
     else:
-      when declared(debug):
+      when defined(debug):
         hint("Modifying key: " & newfield)
     ctxTable[newfield][ContextEntry.size.ord] = newBlockStmt(sizecode)
     ctxTable[newfield][ContextEntry.serialize.ord] = newBlockStmt(serializecode)
@@ -57,7 +57,7 @@ proc getContext(): Context =
   result = initContext()
   for k, v in ctxTable:
     var tc: TypeChunk
-    when declared(debug):
+    when defined(debug):
       hint("Extracting key: " & k)
     # >[0]<block "Name"[0]: >[1]<
     closureScope:
