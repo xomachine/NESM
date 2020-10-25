@@ -4,7 +4,7 @@ from nesm import serializable
 import helpers/rnw
 from sequtils import newSeqWith
 from streams import setPosition
-from nesm.bytestream import newByteStream
+from nesm/bytestream import newByteStream
 
 suite "Dynamic structure tests":
   test "Static object in dynamic context":

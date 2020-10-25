@@ -51,3 +51,19 @@ suite "Bugs":
     let dt = SaveGame.deserialize(rnw)
     require(dt.sectors.len == t.sectors.len)
     check(dt.sectors == t.sectors)
+
+  test "#20":
+    type
+      A = object
+        x: string
+
+      B = object
+        y: A
+
+      C = object
+        z: B
+
+
+    toSerializable(A)
+    toSerializable(B)
+    toSerializable(C)

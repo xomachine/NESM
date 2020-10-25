@@ -24,40 +24,40 @@
 ## code can be seen when **-d:debug** is passed to Nim compiler):
 ##
 ## .. code-block:: nim
-##  type
-##    Ball = object
-##      weight: float32
-##      diameter: int32
-##      isHollow: bool
+##   type
+##     Ball = object
+##       weight: float32
+##       diameter: int32
+##       isHollow: bool
 ##
-##  proc size(obj: Ball): int =
-##    result += 4
-##    result += 4
-##    result += 1
-##    result += 0
+##   proc size(obj169004: Ball): Natural =
+##     (0 + 4 + 4 + 1)
 ##
-##  proc serialize(obj: Ball; thestream: Stream) =
+##   proc serialize(obj169005: Ball; thestream: Stream) =
 ##     discard
-##     thestream.writeData(obj.weight.unsafeAddr, 4)
-##     thestream.writeData(obj.diameter.unsafeAddr, 4)
-##     thestream.writeData(obj.isHollow.unsafeAddr, 1)
+##     thestream.writeData(obj169005.weight.unsafeAddr, 4)
+##     thestream.writeData(obj169005.diameter.unsafeAddr, 4)
+##     thestream.writeData(obj169005.isHollow.unsafeAddr, 1)
 ##
-##   proc serialize(obj: Ball): string =
-##     let ss142002 = newStringStream()
-##     serialize(obj, ss142002)
-##     ss142002.data
+##   proc serialize(obj169010: Ball): string =
+##     let ss169012 = newStringStream()
+##     serialize(obj169010, ss169012)
+##     ss169012.data
 ##
-##   proc deserialize(thetype142004: typedesc[Ball]; thestream: Stream): Ball =
+##   proc deserialize(obj169006: var Ball; thestream: Stream) =
 ##     discard
-##     assert(4 ==
-##         thestream.readData(result.weight.unsafeAddr, 4),
-##            "Stream has not provided enough data")
-##     assert(4 ==
-##         thestream.readData(result.diameter.unsafeAddr, 4),
-##            "Stream has not provided enough data")
-##     assert(1 ==
-##         thestream.readData(result.isHollow.unsafeAddr, 1),
-##            "Stream has not provided enough data")
+##     doAssert(4 ==
+##         thestream.readData(obj169006.weight.unsafeAddr, 4),
+##              "Stream has not provided enough data")
+##     doAssert(4 ==
+##         thestream.readData(obj169006.diameter.unsafeAddr, 4),
+##              "Stream has not provided enough data")
+##     doAssert(1 ==
+##         thestream.readData(obj169006.isHollow.unsafeAddr, 1),
+##              "Stream has not provided enough data")
+##
+##   proc deserialize(a169008: typedesc[Ball]; thestream: Stream): Ball =
+##     deserialize(result, thestream)
 ##
 ## As you may see from the code above, the macro generates three kinds
 ## of procedures: serializer, deserializer and size estimator.
@@ -342,6 +342,25 @@
 ## will be raised. To disable such a behaviour user may use the
 ## **-d:disableEnumChecks** compiler switch.
 ##
+## Default values and incomplete deserialization
+## ---------------------------------------------
+## **NESM** is able to perform incomplete deserialization. When the stream ends
+## before the whole object is deserialized, **NESM** raises an exception.
+## When you are using `(obj: var TheType, thestream: Stream)` variant of
+## the `deserialize` proc you can get an incomplete serialization result
+## in the object passed as the first parameter after handling the exception.
+##
+## Note that if the object already contain values before passing it to
+## the deserialize proc those values will be overwriten only for data
+## available in the stream. All other values will be left untouched.
+##
+## There are two edge cases in the incomplete deserialization behaviour:
+## * incomplete seq or string with size available in the stream will be overwritten
+##   by seq of that size with default elements then the available elements
+##   will be filled and all others will be left as default values
+##   (not the values passed in the original object)
+## * incomplete cstring will not be overwritten until zero byte is encountered in the stream
+##
 ## Future ideas
 ## ------------
 ## The following will not necessarily be done but may be
@@ -392,6 +411,18 @@ proc deserialize*(thetype: typedesc[TheType],
   ## When the stream will not provide enough bytes
   ## an `AssertionError` will be raised.
   discard
+
+proc deserialize*(obj: TheType,
+                  stream: Stream): TheType
+  {.raises: AssertionError.} =
+  ## Interprets the data received from the `stream`
+  ## as `TheType` and deserializes it then to the `obj`.
+  ## The `obj` may be filled partially if the `stream`
+  ## has not provided enough data.
+  ## When the stream will not provide enough bytes
+  ## an `AssertionError` will be raised.
+  discard
+
 proc deserialize*(thetype: typedesc[TheType],
   data: string | seq[byte | char | int8 | uint8]): TheType
   {.raises: AssertionError.} =

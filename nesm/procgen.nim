@@ -25,9 +25,7 @@ proc makeDeclaration(typenode: NimNode, kind: ProcType, is_exported: bool,
   let procname =
     if is_exported: newIdentNode($kind).postfix("*")
     else: newIdentNode($kind)
-  let bgsource = case kind
-    of deserialize: newIdentNode("result")
-    else: nskParam.genSym("obj")
+  let bgsource = nskParam.genSym("obj")
   let body = bodygen(bgsource)
   let STREAM_NAME = getStreamName()
   case kind
@@ -36,8 +34,8 @@ proc makeDeclaration(typenode: NimNode, kind: ProcType, is_exported: bool,
       proc `procname`(`bgsource`: `typenode`, `STREAM_NAME`: Stream) = `body`
   of deserialize:
     quote do:
-      proc `procname`(a: typedesc[`typenode`],
-                      `STREAM_NAME`: Stream): `typenode` = `body`
+      proc `procname`(`bgsource`: var `typenode`,
+                      `STREAM_NAME`: Stream) = `body`
   of size:
     if is_static:
       quote do:
@@ -45,6 +43,18 @@ proc makeDeclaration(typenode: NimNode, kind: ProcType, is_exported: bool,
     else:
       quote do:
         proc `procname`(`bgsource`: `typenode`): Natural = `body`
+
+proc makeDefaultDeserializeConversion(typenode: NimNode, is_exported: bool): NimNode =
+  ## Makes proc to convert old proc with typedesc argument to new one with default
+  ## value
+  let rawprocname = newIdentNode("deserialize")
+  let procname = if is_exported: rawprocname.postfix("*") else: rawprocname
+  let resultname = newIdentNode("result")
+  let STREAM_NAME = getStreamName()
+  quote do:
+    proc `procname`(a: typedesc[`typenode`],
+                    `STREAM_NAME`: Stream): `typenode` =
+      `rawprocname`(`resultname`, `STREAM_NAME`)
 
 proc makeSerializeStreamConversion(typenode: NimNode,
                                    is_exported: bool): NimNode =
@@ -89,8 +99,8 @@ proc generateProcs(context: var Context, obj: NimNode): NimNode =
   let typenode = if is_shared: typedeclaration.basename else: typedeclaration
   let body = obj[2]
   let typeinfo = genTypeChunk(newcontext, body)
-  context.declared[typenode.repr] = typeinfo
-  context.newfields.add(typenode.repr)
+  context.declared[$typenode] = typeinfo
+  context.newfields.add($typenode)
   let size_proc = makeDeclaration(typenode, size, is_shared, context.is_static,
                                   typeinfo.size)
   let stream_serializer = makeDeclaration(typenode, serialize, is_shared,
@@ -98,11 +108,12 @@ proc generateProcs(context: var Context, obj: NimNode): NimNode =
   let stream_deserializer =
     makeDeclaration(typenode, deserialize, is_shared, context.is_static,
                     typeinfo.deserialize)
+  let classic_deserializer = makeDefaultDeserializeConversion(typenode, is_shared)
   let string_serializer = makeSerializeStreamConversion(typenode, is_shared)
   let string_deserializer =
     if context.is_static: makeDeserializeStreamConversion(typenode ,is_shared)
     else: newEmptyNode()
   newStmtList(size_proc, stream_serializer, string_serializer,
-              stream_deserializer, string_deserializer)
+              stream_deserializer, classic_deserializer, string_deserializer)
 
 

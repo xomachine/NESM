@@ -8,7 +8,6 @@ proc getStreamName*(): NimNode {.compileTime.} =
   newIdentNode("thestream")
 
 from tables import Table, contains, `[]`, `[]=`, initTable, pairs
-from sequtils import mapIt, foldl, toSeq, filterIt
 from strutils import `%`
 from utils import unfold, dig
 from typesinfo import isBasic, estimateBasicSize
@@ -94,6 +93,8 @@ proc genTypeChunk(immutableContext: Context, thetype: NimNode): TypeChunk =
         error("It is impossible to use more than one sizeof options at once!")
     elif plaintype in context.declared:
       let declared_type = context.declared[plaintype]
+      when defined(debug):
+        hint("Reusing already declared: " & plaintype)
       if declared_type.dynamic and context.is_static:
         error("Only static objects can be nested into" &
               " static objects, but '" & plaintype &
