@@ -60,24 +60,25 @@ proc getContext(): Context =
     when declared(debug):
       hint("Extracting key: " & k)
     # >[0]<block "Name"[0]: >[1]<
-    let sizecode = v[ContextEntry.size.ord][1]
-    let serializecode = v[ContextEntry.serialize.ord][1]
-    let deserializecode = v[ContextEntry.deserialize.ord][1]
-    tc.size = proc(source: NimNode): NimNode =
-      quote do:
-        block:
-          let `THESOURCENAME` = `source`.unsafeAddr
-          `sizecode`
-    tc.deserialize = proc(source: NimNode): NimNode =
-      quote do:
-        block:
-          let `THESOURCENAME` = `source`.unsafeAddr
-          `deserializecode`
-    tc.serialize = proc(source: NimNode): NimNode =
-      quote do:
-        block:
-          let `THESOURCENAME` = `source`.unsafeAddr
-          `serializecode`
+    closureScope:
+      let sizecode = v[ContextEntry.size.ord][1]
+      let serializecode = v[ContextEntry.serialize.ord][1]
+      let deserializecode = v[ContextEntry.deserialize.ord][1]
+      tc.size = proc(source: NimNode): NimNode =
+        quote do:
+          block:
+            let `THESOURCENAME` = `source`.unsafeAddr
+            `sizecode`
+      tc.deserialize = proc(source: NimNode): NimNode =
+        quote do:
+          block:
+            let `THESOURCENAME` = `source`.unsafeAddr
+            `deserializecode`
+      tc.serialize = proc(source: NimNode): NimNode =
+        quote do:
+          block:
+            let `THESOURCENAME` = `source`.unsafeAddr
+            `serializecode`
     tc.dynamic = v[ContextEntry.dynamic.ord].intVal.bool
     tc.has_hidden = v[ContextEntry.has_hidden.ord].intVal.bool
     if v[ContextEntry.maxcount.ord].kind == nnkUInt64Lit:
