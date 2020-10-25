@@ -23,7 +23,7 @@ proc getCount(declaration: NimNode): uint64 =
         result = c[1][0].intVal.uint64 + 1
       else:
         result += 1
-    of nnkIdent:
+    of nnkIdent, nnkSym:
       result += 1
     of nnkEmpty: discard
     else:
