@@ -30,11 +30,11 @@ proc getCount(declaration: NimNode): uint64 =
       error("Unexpected AST: " & c.treeRepr)
 
 proc estimateEnumSize(highest: uint64): int {.compileTime.} =
-  let maxvalue = ((highest) shr 1).int64
-  if maxvalue in 0'i64..int8.high.int64: 1
-  elif maxvalue in (int8.high.int64+1)..int16.high.int64: 2
-  elif maxvalue in (int16.high.int64+1)..int32.high.int64: 4
-  elif maxvalue in (int32.high.int64+1)..int64.high: 8
+  let maxvalue = if highest != 0: highest - 1 else: highest
+  if maxvalue in 0'u64..uint8.high.uint64: 1
+  elif maxvalue in (uint8.high.uint64+1)..uint16.high.uint64: 2
+  elif maxvalue in (uint16.high.uint64+1)..uint32.high.uint64: 4
+  elif maxvalue in (uint32.high.uint64+1)..uint64.high: 8
   else: 0
 
 proc genEnum(context: Context, declaration: NimNode): TypeChunk =
