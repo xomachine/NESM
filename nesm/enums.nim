@@ -19,7 +19,7 @@ proc getCount(declaration: NimNode): uint64 =
       of nnkIntLit, nnkInt8Lit, nnkInt16Lit, nnkInt32Lit, nnkInt64Lit,
          nnkUInt8Lit, nnkUInt16Lit, nnkUInt32Lit, nnkUInt64Lit:
         result = c[1].intVal.uint64 + 1
-      of nnkPar:
+      of nnkPar, nnkTupleConstr:
         result = c[1][0].intVal.uint64 + 1
       else:
         result += 1
