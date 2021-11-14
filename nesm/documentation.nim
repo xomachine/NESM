@@ -209,7 +209,7 @@
 ## related.
 ##
 ## Endianness switching
-## -----------------
+## --------------------
 ## There is a way exists to set which endian should be used
 ## while [de]serialization particular structure or part of
 ## the structure. A special keyword **endian** in serialization options
