@@ -19,5 +19,4 @@ task tests, "Run autotests":
         rmFile("tmpfile")
 
 task docs, "Build documentation":
-  exec("nim doc2 -p:" & thisDir() &
-    " -o:index.html nesm.nim")
+  exec("nim doc --project nesm.nim")
