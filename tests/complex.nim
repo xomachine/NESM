@@ -87,3 +87,16 @@ suite "Complex tests":
     rnw.setPosition(0)
     dsmo.serialize(rnw)
     check(true)
+
+  test "Periodic dynamic variant":
+    serializable:
+      type
+        VariantType = object
+          case a: uint8
+          of 1:
+            b: string
+          else:
+            c: uint8
+        PeriodicContainer = object
+          a: seq[VariantType]
+    check(true)
