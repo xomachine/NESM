@@ -182,17 +182,8 @@ proc genCase(context: Context, decl: NimNode): TypeChunk =
     let conditions = children[0..^2]
     let branch = context.genTypeChunk(b.last)
     let size = proc(source: NimNode):NimNode =
-      # All case branches by default are being wrapped with `result += val`
-      # Except the case of statement list, another case or loop
       let casebody = branch.size(source)
-      case casebody.kind
-      of nnkStmtList, nnkForStmt, nnkCaseStmt:
-        newTree(b.kind, conditions & @[casebody])
-      else:
-        newTree(b.kind, conditions & @[
-          newTree(nnkStmtList,
-                  @[newIdentNode("result").infix("+=", casebody)])
-          ])
+      newTree(b.kind, conditions & @[casebody])
     let serialize = proc(source: NimNode): NimNode =
       let casebody = newStmtList(branch.serialize(source))
       newTree(b.kind, conditions & @[casebody])
@@ -214,7 +205,7 @@ proc genCase(context: Context, decl: NimNode): TypeChunk =
     if context.is_static:
       newIntLitNode(sizenodes.mapIt(evalSize(it)).max)
     else:
-      newTree(nnkCaseStmt, condition(source) & sizenodes)
+      newPar(newTree(nnkCaseStmt, condition(source) & sizenodes))
   result.serialize = proc(source: NimNode): NimNode =
     let sernodes:seq[NimNode] = serializes.mapIt(it(source))
     newTree(nnkCaseStmt, condition(source) & sernodes)
