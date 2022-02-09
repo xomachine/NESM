@@ -65,7 +65,7 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
         newID[0][last] = originalType
         children.add(newID.cleanupTypeDeclaration()[0])
       elif c[last].repr == "cstring":
-        var newID = newNimNode(nnkIdentDefs)
+        var newID = copyNimNode(c)
         copyChildrenTo(c, newID)
         newID[last] = newIdentNode("string")
         children.add(newID)
@@ -73,7 +73,7 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
            c[1].kind == nnkTableConstr:
         continue
       elif c[last].kind == nnkTupleTy:
-        var newID = newNimNode(c.kind)
+        var newID = copyNimNode(c)
         copyChildrenTo(c, newID)
         newID[last] = cleanupTypeDeclaration(c[last])
         children.add(newID)
@@ -81,7 +81,7 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
         children.add(c)
     else:
       children.add(cleanupTypeDeclaration(c))
-  newTree(declaration.kind, children)
+  copyNimNode(declaration).add(children)
 
 macro nonIntrusiveBody(typename: typed, o: untyped, de: static[bool]): untyped =
   let typebody = getTypeImpl(typename)
