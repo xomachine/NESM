@@ -118,4 +118,3 @@ suite "Complex tests":
     check(o.a[0].b == d.a[0].b)
     check(o.a[1].a == d.a[1].a)
     check(o.a[1].c == d.a[1].c)
-    check(true)
