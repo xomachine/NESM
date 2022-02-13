@@ -87,3 +87,34 @@ suite "Complex tests":
     rnw.setPosition(0)
     dsmo.serialize(rnw)
     check(true)
+
+  test "Periodic dynamic variant":
+    serializable:
+      type
+        VariantType = object
+          case a: uint8
+          of 1:
+            b: string
+          else:
+            c: uint8
+        PeriodicContainer = object
+          a: seq[VariantType]
+    let o = PeriodicContainer(
+      a: @[
+        VariantType(
+          a: 1,
+          b: get_random_string()),
+        VariantType(
+          a: uint8(2+rand(100)),
+          c: rand(100).uint8)
+      ]
+    )
+    let rnw = get_reader_n_writer()
+    o.serialize(rnw)
+    rnw.setPosition(0)
+    let d = PeriodicContainer.deserialize(rnw)
+    check(o.a.len == d.a.len)
+    check(o.a[0].a == d.a[0].a)
+    check(o.a[0].b == d.a[0].b)
+    check(o.a[1].a == d.a[1].a)
+    check(o.a[1].c == d.a[1].c)

@@ -1,5 +1,5 @@
 
-version       = "0.4.9"
+version       = "0.4.10"
 author        = "xomachine (Fomichev Dmitriy)"
 description   = "NESM stands for Nim's Easy Serialization Macro. The macro allowing generation of serialization functions by one line of code!"
 license       = "MIT"
@@ -19,5 +19,4 @@ task tests, "Run autotests":
         rmFile("tmpfile")
 
 task docs, "Build documentation":
-  exec("nim doc2 -p:" & thisDir() &
-    " -o:index.html nesm.nim")
+  exec("nim doc --project nesm.nim")
