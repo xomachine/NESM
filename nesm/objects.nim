@@ -36,9 +36,15 @@ proc caseWorkaround(tc: TypeChunk): TypeChunk =
     let ods = olddeser(tmpvar)
     quote do:
       block:
-        var `tmpvar`: type(`s`)
-        `ods`
-        `s` = `tmpvar`
+        when (NimMajor, NimMinor, NimPatch) >= (1, 6, 0):
+          {.cast(uncheckedAssign).}:
+            var `tmpvar`: type(`s`)
+            `ods`
+            `s` = `tmpvar`
+        else:
+          var `tmpvar`: type(`s`)
+          `ods`
+          `s` = `tmpvar`
 
 proc genWhen(ifexpr, trueResult, falseResult: NimNode): NimNode =
   quote do:
