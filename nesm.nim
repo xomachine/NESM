@@ -84,7 +84,9 @@ proc cleanupTypeDeclaration(declaration: NimNode): NimNode =
   copyNimNode(declaration).add(children)
 
 macro nonIntrusiveBody(typename: typed, o: untyped, de: static[bool]): untyped =
-  let typebody = getTypeImpl(typename)
+  var typebody = getTypeImpl(typename)
+  while typebody.kind == nnkBracketExpr and typebody[0].eqIdent"typeDesc":
+    typebody = getTypeImpl(typebody[1])
   let ctx = getContext()
   when defined(debug):
     hint("Deserialize? " & $de)
